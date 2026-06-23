@@ -1,0 +1,3083 @@
+# Cote/views.py
+
+import random
+import string
+import json
+import re
+from datetime import datetime
+
+from django.shortcuts import render, redirect, get_object_or_404
+from django.contrib import messages
+from django.utils import timezone
+from django.http import JsonResponse, HttpResponse
+from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_http_methods
+from django.db import transaction
+from django.db.models import Avg, Count, Q
+
+from .models import (
+    Utilisateur, Personne, Personnel, AnneeScolaire, Eleve, Classe, Cours,
+    Inscription, Note, Palmares, OptionEtude, AttributionCours, TitulaireClasse,
+    Periode, Semestre, Bulletin, Archivage, Cote
+)
+from .forms import CoteForm, SelectionForm
+
+
+# =====================================================
+# 1. VUES PUBLIQUES (index, login, logout, register_admin)
+# =====================================================
+
+def index(request):
+    return render(request, 'index.html')
+
+
+def login_view(request):
+    admin_exists = Utilisateur.objects.filter(est_principal=True).exists()
+    if request.method == 'POST':
+        email = request.POST.get('email')
+        password = request.POST.get('password')
+        try:
+            user = Utilisateur.objects.get(email=email, est_actif=True)
+            if user.check_password(password):
+                request.session['user_id'] = user.id
+                request.session['user_email'] = user.email
+                request.session['user_role'] = user.role
+                request.session['user_nom'] = f"{user.id_personne.nom} {user.id_personne.prenom}"
+                request.session['is_principal'] = user.est_principal
+                user.dernier_connexion = timezone.now()
+                user.save()
+                messages.success(request, f'Bienvenue {user.id_personne.prenom} !')
+                if user.role == 'DE' or user.est_principal:
+                    return redirect('dashboard_de')
+                elif user.role == 'ENSEIGNANT':
+                    return redirect('dashboard_enseignant')
+                elif user.role == 'TITULAIRE':
+                    return redirect('dashboard_titulaire')
+                else:
+                    return redirect('dashboard')
+            else:
+                messages.error(request, 'Mot de passe incorrect')
+        except Utilisateur.DoesNotExist:
+            messages.error(request, 'Email non trouvé ou compte inactif')
+    context = {'admin_exists': admin_exists, 'page_title': 'Connexion - CS KABA'}
+    return render(request, 'Cote/login.html', context)
+
+
+def logout_view(request):
+    request.session.flush()
+    messages.success(request, 'Vous avez été déconnecté avec succès')
+    return redirect('index')
+
+
+def register_admin(request):
+    if Utilisateur.objects.filter(est_principal=True).exists():
+        messages.warning(request, 'Un administrateur principal existe déjà')
+        return redirect('login')
+    if request.method == 'POST':
+        nom = request.POST.get('nom')
+        postnom = request.POST.get('postnom')
+        prenom = request.POST.get('prenom')
+        email = request.POST.get('email')
+        telephone = request.POST.get('telephone')
+        password = request.POST.get('password')
+        password_confirm = request.POST.get('password_confirm')
+        if password != password_confirm:
+            messages.error(request, 'Les mots de passe ne correspondent pas')
+            return redirect('register_admin')
+        if len(password) < 6:
+            messages.error(request, 'Le mot de passe doit contenir au moins 6 caractères')
+            return redirect('register_admin')
+        if Utilisateur.objects.filter(email=email).exists():
+            messages.error(request, 'Cet email est déjà utilisé')
+            return redirect('register_admin')
+        try:
+            personne = Personne.objects.create(
+                nom=nom, postnom=postnom or '', prenom=prenom,
+                email=email, telephone=telephone or ''
+            )
+            utilisateur = Utilisateur(
+                id_personne=personne, email=email, role='DE',
+                est_actif=True, est_principal=True
+            )
+            utilisateur.set_password(password)
+            utilisateur.save()
+            Personnel.objects.create(id_utilisateur=utilisateur, date_embauche=datetime.now().date(), est_titulaire=True)
+            messages.success(request, 'Administrateur créé avec succès ! Veuillez vous connecter.')
+            return redirect('login')
+        except Exception as e:
+            messages.error(request, f'Erreur lors de la création : {str(e)}')
+    return render(request, 'Cote/register_admin.html', {'page_title': 'Création du Directeur des Études'})
+
+
+# =====================================================
+# 2. TABLEAUX DE BORD
+# =====================================================
+
+def dashboard(request):
+    if not request.session.get('user_id'):
+        return redirect('login')
+    return redirect('dashboard_de')
+
+
+def dashboard_de(request):
+    if not request.session.get('user_id'):
+        return redirect('login')
+    if request.session.get('user_role') != 'DE':
+        messages.error(request, 'Accès non autorisé')
+        return redirect('login')
+
+    annee_active = AnneeScolaire.objects.filter(est_active=True).first()
+
+    total_eleves = Inscription.objects.filter(id_annee=annee_active, est_active=True).count() if annee_active else 0
+    total_enseignants = Personnel.objects.count()
+    total_classes = Classe.objects.filter(inscription__id_annee=annee_active, inscription__est_active=True).distinct().count() if annee_active else 0
+
+    top_eleves_data = []
+    if annee_active:
+        inscriptions = Inscription.objects.filter(id_annee=annee_active, est_active=True).select_related('id_eleve__id_personne', 'id_classe')
+        eleves_avec_moyennes = []
+        for inscription in inscriptions:
+            eleve = inscription.id_eleve
+            moyenne = Note.objects.filter(id_eleve=eleve, id_annee=annee_active).aggregate(Avg('note'))['note__avg']
+            if moyenne:
+                mention = 'Excellent' if moyenne >= 16 else 'Très Bien' if moyenne >= 14 else 'Bien' if moyenne >= 12 else 'Assez Bien' if moyenne >= 10 else 'Passable'
+                eleves_avec_moyennes.append({
+                    'matricule': eleve.matricule,
+                    'nom': eleve.id_personne.nom,
+                    'prenom': eleve.id_personne.prenom,
+                    'classe': inscription.id_classe.nom_classe,
+                    'moyenne': round(moyenne, 2),
+                    'mention': mention
+                })
+        top_eleves_data = sorted(eleves_avec_moyennes, key=lambda x: x['moyenne'], reverse=True)[:10]
+
+    taux_reussite = 0
+    if annee_active:
+        inscriptions = Inscription.objects.filter(id_annee=annee_active, est_active=True)
+        total_eleves_inscrits = inscriptions.count()
+        if total_eleves_inscrits > 0:
+            eleves_reussis = 0
+            for inscription in inscriptions:
+                moyenne = Note.objects.filter(id_eleve=inscription.id_eleve, id_annee=annee_active).aggregate(Avg('note'))['note__avg']
+                if moyenne and moyenne >= 10:
+                    eleves_reussis += 1
+            taux_reussite = int((eleves_reussis / total_eleves_inscrits) * 100) if total_eleves_inscrits > 0 else 0
+
+    annees_scolaires = AnneeScolaire.objects.all().order_by('date_debut')
+    evo_labels = []
+    evo_data = []
+    for annee in annees_scolaires:
+        evo_labels.append(annee.annee_scolaire)
+        evo_data.append(Inscription.objects.filter(id_annee=annee).count())
+    if not evo_labels:
+        evo_labels = ['Aucune donnée']
+        evo_data = [0]
+
+    repartition_labels = []
+    repartition_data = []
+    repartition_colors = ['#1e3c72', '#2a5298', '#3b6cb0', '#4c86c8', '#5c9fd9', '#6cb8ea', '#7dd1fb', '#8eeaff']
+    if annee_active:
+        classes_avec_inscrits = Classe.objects.filter(inscription__id_annee=annee_active, inscription__est_active=True).distinct()
+        for classe in classes_avec_inscrits:
+            nb_eleves = Inscription.objects.filter(id_classe=classe, id_annee=annee_active, est_active=True).count()
+            if nb_eleves > 0:
+                repartition_labels.append(classe.nom_classe)
+                repartition_data.append(nb_eleves)
+    if not repartition_labels:
+        repartition_labels = ['Aucune inscription']
+        repartition_data = [1]
+        repartition_colors = ['#cbd5e1']
+
+    annee_min = annees_scolaires.first().annee_scolaire.split('-')[0] if annees_scolaires else '2020'
+    annee_max = annees_scolaires.last().annee_scolaire.split('-')[1] if annees_scolaires else '2024'
+
+    context = {
+        'user_nom': request.session.get('user_nom'),
+        'total_eleves': total_eleves,
+        'total_enseignants': total_enseignants,
+        'total_classes': total_classes,
+        'taux_reussite': taux_reussite,
+        'top_eleves': top_eleves_data,
+        'annee_active': annee_active,
+        'evo_labels': json.dumps(evo_labels),
+        'evo_data': json.dumps(evo_data),
+        'annee_min': annee_min,
+        'annee_max': annee_max,
+        'repartition_labels': json.dumps(repartition_labels),
+        'repartition_data': json.dumps(repartition_data),
+        'repartition_colors': json.dumps(repartition_colors[:len(repartition_labels)]),
+        'page_title': 'Dashboard Administrateur - CS KABA'
+    }
+    return render(request, 'Cote/admin/dashboard_de.html', context)
+
+
+def dashboard_enseignant_old(request):
+    if not request.session.get('user_id'):
+        return redirect('login')
+    if request.session.get('user_role') != 'ENSEIGNANT':
+        messages.error(request, 'Accès non autorisé')
+        return redirect('login')
+    context = {'user_nom': request.session.get('user_nom'), 'user_role': request.session.get('user_role'), 'page_title': 'Dashboard Enseignant - CS KABA'}
+    return render(request, 'Cote/enseignant/dashboard_ense.html', context)
+
+
+def dashboard_titulaire(request):
+    if not request.session.get('user_id'):
+        return redirect('login')
+    if request.session.get('user_role') != 'TITULAIRE':
+        messages.error(request, 'Accès non autorisé')
+        return redirect('login')
+    context = {'user_nom': request.session.get('user_nom'), 'user_role': request.session.get('user_role'), 'page_title': 'Dashboard Titulaire - CS KABA'}
+    return render(request, 'Cote/titulaire/dashboard_titulaire.html', context)
+
+
+# =====================================================
+# 3. GESTION DES ANNÉES SCOLAIRES (page + API)
+# =====================================================
+
+def annee_scolaire_page(request):
+    if not request.session.get('user_id'):
+        return redirect('login')
+    if request.session.get('user_role') != 'DE':
+        messages.error(request, 'Accès non autorisé')
+        return redirect('login')
+    context = {
+        'user_nom': request.session.get('user_nom'),
+        'annee_active': AnneeScolaire.objects.filter(est_active=True).first(),
+        'annees': AnneeScolaire.objects.all().order_by('-id'),
+        'page_title': 'Année scolaire - CS KABA'
+    }
+    return render(request, 'Cote/admin/annee_scolaire.html', context)
+
+
+def validate_year_format(year_str):
+    pattern = r'^\d{4}-\d{4}$'
+    if not re.match(pattern, year_str):
+        return False
+    years = year_str.split('-')
+    start_year = int(years[0])
+    end_year = int(years[1])
+    return end_year == start_year + 1
+
+
+@csrf_exempt
+def ajouter_annee(request):
+    user_id = request.session.get('user_id')
+    if not user_id:
+        return JsonResponse({'success': False, 'error': 'Non authentifié'}, status=401)
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'Méthode non autorisée'}, status=405)
+
+    if request.content_type == 'application/json':
+        data = json.loads(request.body)
+        annee_scolaire = data.get('annee_scolaire', '').strip()
+        date_debut_str = data.get('date_debut', '').strip()
+        date_fin_str = data.get('date_fin', '').strip()
+        est_active = data.get('est_active', False)
+    else:
+        annee_scolaire = request.POST.get('annee_scolaire', '').strip()
+        date_debut_str = request.POST.get('date_debut', '').strip()
+        date_fin_str = request.POST.get('date_fin', '').strip()
+        est_active = request.POST.get('est_active') == 'true'
+
+    if not annee_scolaire:
+        return JsonResponse({'success': False, 'error': 'L\'année scolaire est requise'}, status=400)
+    if not validate_year_format(annee_scolaire):
+        return JsonResponse({'success': False, 'error': 'Format invalide. Utilisez AAAA-AAAA (ex: 2026-2027)'}, status=400)
+
+    def parse_flexible_date(date_str):
+        date_str = date_str.strip()
+        if re.match(r'^\d{4}-\d{2}-\d{2}$', date_str):
+            return datetime.strptime(date_str, '%Y-%m-%d').date()
+        if re.match(r'^\d{2}/\d{2}/\d{4}$', date_str):
+            return datetime.strptime(date_str, '%d/%m/%Y').date()
+        if re.match(r'^\d{2}-\d{2}-\d{4}$', date_str):
+            return datetime.strptime(date_str, '%d-%m-%Y').date()
+        return None
+
+    date_debut = parse_flexible_date(date_debut_str)
+    date_fin = parse_flexible_date(date_fin_str)
+    if not date_debut or not date_fin:
+        return JsonResponse({'success': False, 'error': 'Dates invalides. Utilisez JJ/MM/AAAA ou AAAA-MM-JJ.'}, status=400)
+    if date_debut >= date_fin:
+        return JsonResponse({'success': False, 'error': 'La date de fin doit être postérieure à la date de début.'}, status=400)
+    if AnneeScolaire.objects.filter(annee_scolaire=annee_scolaire).exists():
+        return JsonResponse({'success': False, 'error': 'Cette année scolaire existe déjà.'}, status=400)
+    if est_active:
+        AnneeScolaire.objects.filter(est_active=True).update(est_active=False)
+    try:
+        annee = AnneeScolaire.objects.create(annee_scolaire=annee_scolaire, date_debut=date_debut, date_fin=date_fin, est_active=est_active)
+        return JsonResponse({'success': True, 'message': f'Année scolaire {annee_scolaire} ajoutée avec succès'})
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': f'Erreur interne : {str(e)}'}, status=500)
+
+
+def get_annee(request, id):
+    if not request.session.get('user_id'):
+        return JsonResponse({'success': False, 'error': 'Non authentifié'}, status=401)
+    try:
+        annee = AnneeScolaire.objects.get(id=id)
+        return JsonResponse({'success': True, 'annee': {
+            'id': annee.id, 'annee_scolaire': annee.annee_scolaire,
+            'date_debut': annee.date_debut.strftime('%Y-%m-%d'),
+            'date_fin': annee.date_fin.strftime('%Y-%m-%d'),
+            'est_active': annee.est_active
+        }})
+    except AnneeScolaire.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Année non trouvée'})
+
+
+@csrf_exempt
+def activer_annee(request, id):
+    if not request.session.get('user_id'):
+        return JsonResponse({'success': False, 'error': 'Non authentifié'}, status=401)
+    if request.method == 'POST':
+        try:
+            AnneeScolaire.objects.filter(est_active=True).update(est_active=False)
+            annee = AnneeScolaire.objects.get(id=id)
+            annee.est_active = True
+            annee.save()
+            return JsonResponse({'success': True, 'message': f'Année scolaire {annee.annee_scolaire} activée avec succès'})
+        except AnneeScolaire.DoesNotExist:
+            return JsonResponse({'success': False, 'error': 'Année non trouvée'})
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)})
+    return JsonResponse({'success': False, 'error': 'Méthode non autorisée'})
+
+
+@csrf_exempt
+def desactiver_annee(request, id):
+    if not request.session.get('user_id'):
+        return JsonResponse({'success': False, 'error': 'Non authentifié'}, status=401)
+    if request.method == 'POST':
+        try:
+            annee = AnneeScolaire.objects.get(id=id)
+            annee.est_active = False
+            annee.save()
+            return JsonResponse({'success': True, 'message': f'Année scolaire {annee.annee_scolaire} désactivée avec succès'})
+        except AnneeScolaire.DoesNotExist:
+            return JsonResponse({'success': False, 'error': 'Année non trouvée'})
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)})
+    return JsonResponse({'success': False, 'error': 'Méthode non autorisée'})
+
+
+@csrf_exempt
+def supprimer_annee(request, id):
+    if not request.session.get('user_id'):
+        return JsonResponse({'success': False, 'error': 'Non authentifié'}, status=401)
+    if request.method == 'DELETE':
+        try:
+            annee = AnneeScolaire.objects.get(id=id)
+            if annee.inscription_set.exists():
+                return JsonResponse({'success': False, 'error': 'Cette année scolaire contient des inscriptions. Supprimez-les d\'abord.'})
+            nom = annee.annee_scolaire
+            annee.delete()
+            return JsonResponse({'success': True, 'message': f'Année scolaire {nom} supprimée avec succès'})
+        except AnneeScolaire.DoesNotExist:
+            return JsonResponse({'success': False, 'error': 'Année non trouvée'})
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)})
+    return JsonResponse({'success': False, 'error': 'Méthode non autorisée'})
+
+
+def get_annee_stats(request, id):
+    if not request.session.get('user_id'):
+        return JsonResponse({'success': False, 'error': 'Non authentifié'}, status=401)
+    try:
+        annee = AnneeScolaire.objects.get(id=id)
+        inscriptions_count = annee.inscription_set.count()
+        notes_count = annee.note_set.count()
+        classes_count = annee.inscription_set.values('id_classe').distinct().count()
+        taux_reussite = 0
+        eleves_avec_moyenne = 0
+        eleves_reussis = 0
+        for inscription in annee.inscription_set.all():
+            moyenne = inscription.id_eleve.note_set.filter(id_annee=annee).aggregate(Avg('note'))['note__avg']
+            if moyenne:
+                eleves_avec_moyenne += 1
+                if moyenne >= 10:
+                    eleves_reussis += 1
+        if eleves_avec_moyenne > 0:
+            taux_reussite = int((eleves_reussis / eleves_avec_moyenne) * 100)
+        enseignants_count = Personnel.objects.filter(titulaireclasse__id_annee=annee).distinct().count()
+        return JsonResponse({
+            'success': True,
+            'annee_scolaire': annee.annee_scolaire,
+            'date_debut': annee.date_debut.strftime('%d/%m/%Y'),
+            'date_fin': annee.date_fin.strftime('%d/%m/%Y'),
+            'est_active': annee.est_active,
+            'inscriptions': inscriptions_count,
+            'notes': notes_count,
+            'classes': classes_count,
+            'taux_reussite': taux_reussite,
+            'enseignants': enseignants_count
+        })
+    except AnneeScolaire.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Année non trouvée'})
+
+
+def print_annee_report(request, id):
+    if not request.session.get('user_id'):
+        return redirect('login')
+    try:
+        annee = AnneeScolaire.objects.get(id=id)
+        inscriptions = annee.inscription_set.select_related('id_eleve__id_personne', 'id_classe').all()
+        html = f"""
+        <!DOCTYPE html>
+        <html>
+        <head><title>Rapport Année Scolaire {annee.annee_scolaire}</title><meta charset="utf-8">
+        <style>
+            body {{ font-family: Arial, sans-serif; margin: 40px; }}
+            h1 {{ color: #1e3c72; }}
+            .header {{ text-align: center; margin-bottom: 30px; }}
+            table {{ width: 100%; border-collapse: collapse; margin-top: 20px; }}
+            th, td {{ border: 1px solid #ddd; padding: 8px; text-align: left; }}
+            th {{ background-color: #1e3c72; color: white; }}
+            .footer {{ margin-top: 30px; text-align: center; font-size: 12px; color: #666; }}
+        </style>
+        </head>
+        <body>
+            <div class="header">
+                <h1>CS KABA - Complexe Scolaire d'Excellence</h1>
+                <h2>Rapport Année Scolaire {annee.annee_scolaire}</h2>
+                <p>Période: du {annee.date_debut.strftime('%d/%m/%Y')} au {annee.date_fin.strftime('%d/%m/%Y')}</p>
+                <p>Statut: {"Active" if annee.est_active else "Inactive"}</p>
+            </div>
+            <h3>Liste des inscriptions ({inscriptions.count()} élèves)</h3>
+            <table><thead><tr><th>Matricule</th><th>Nom complet</th><th>Classe</th><th>Date inscription</th></tr></thead><tbody>
+        """
+        for ins in inscriptions:
+            html += f"<tr><td>{ins.id_eleve.matricule}</td><td>{ins.id_eleve.id_personne.nom} {ins.id_eleve.id_personne.prenom}</td><td>{ins.id_classe.nom_classe}</td><td>{ins.date_inscription.strftime('%d/%m/%Y')}</td></tr>"
+        html += f"""
+            </tbody></table>
+            <div class="footer"><p>Document généré le {datetime.now().strftime('%d/%m/%Y à %H:%M')}</p><p>CS KABA - Complexe Scolaire d'Excellence</p></div>
+        </body></html>
+        """
+        return HttpResponse(html, content_type='text/html')
+    except AnneeScolaire.DoesNotExist:
+        return redirect('annee_scolaire_page')
+
+
+# =====================================================
+# 4. GESTION DES CLASSES ET OPTIONS (page + API)
+# =====================================================
+
+def gestion_cls_option_page(request):
+    if not request.session.get('user_id'):
+        return redirect('login')
+    if request.session.get('user_role') != 'DE':
+        messages.error(request, 'Accès non autorisé')
+        return redirect('login')
+    context = {
+        'user_nom': request.session.get('user_nom'),
+        'classes': Classe.objects.all().order_by('nom_classe'),
+        'options': OptionEtude.objects.all().order_by('nom_option'),
+        'page_title': 'Gestion des classes et options - CS KABA'
+    }
+    return render(request, 'Cote/admin/ajouter_cls_option.html', context)
+
+
+@csrf_exempt
+def ajouter_classe(request):
+    if not request.session.get('user_id'):
+        return JsonResponse({'success': False, 'error': 'Non authentifié'}, status=401)
+    if request.method == 'POST':
+        try:
+            classe_id = request.POST.get('classe_id')
+            nom_classe = request.POST.get('nom_classe')
+            niveau = request.POST.get('niveau')
+            id_option = request.POST.get('id_option')
+            capacite_max = request.POST.get('capacite_max', 30)
+            est_cycle_orientation = request.POST.get('est_cycle_orientation') == 'true'
+            actif = request.POST.get('actif') == 'on'
+            if classe_id:
+                classe = Classe.objects.get(id=classe_id)
+                if Classe.objects.filter(nom_classe=nom_classe).exclude(id=classe_id).exists():
+                    return JsonResponse({'success': False, 'error': 'Une autre classe porte déjà ce nom'})
+                classe.nom_classe = nom_classe
+                classe.niveau = niveau
+                classe.capacite_max = capacite_max
+                classe.est_cycle_orientation = est_cycle_orientation
+                classe.actif = actif
+                classe.id_option = OptionEtude.objects.get(id=id_option) if id_option else None
+                classe.save()
+                return JsonResponse({'success': True, 'message': f'Classe {nom_classe} modifiée avec succès'})
+            else:
+                if Classe.objects.filter(nom_classe=nom_classe).exists():
+                    return JsonResponse({'success': False, 'error': 'Cette classe existe déjà'})
+                classe = Classe.objects.create(
+                    nom_classe=nom_classe, niveau=niveau, capacite_max=capacite_max,
+                    est_cycle_orientation=est_cycle_orientation, actif=actif
+                )
+                if id_option:
+                    classe.id_option = OptionEtude.objects.get(id=id_option)
+                    classe.save()
+                return JsonResponse({'success': True, 'message': f'Classe {nom_classe} ajoutée avec succès'})
+        except Classe.DoesNotExist:
+            return JsonResponse({'success': False, 'error': 'Classe non trouvée'})
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)})
+    return JsonResponse({'success': False, 'error': 'Méthode non autorisée'})
+
+
+def get_classe(request, id):
+    if not request.session.get('user_id'):
+        return JsonResponse({'success': False, 'error': 'Non authentifié'}, status=401)
+    try:
+        classe = Classe.objects.get(id=id)
+        return JsonResponse({'success': True, 'classe': {
+            'id': classe.id, 'nom_classe': classe.nom_classe, 'niveau': classe.niveau,
+            'id_option': classe.id_option.id if classe.id_option else None,
+            'capacite_max': classe.capacite_max, 'est_cycle_orientation': classe.est_cycle_orientation,
+            'actif': classe.actif
+        }})
+    except Classe.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Classe non trouvée'})
+
+
+@csrf_exempt
+def supprimer_classe(request, id):
+    if not request.session.get('user_id'):
+        return JsonResponse({'success': False, 'error': 'Non authentifié'}, status=401)
+    if request.method == 'DELETE':
+        try:
+            classe = Classe.objects.get(id=id)
+            if classe.inscription_set.exists():
+                return JsonResponse({'success': False, 'error': f'Cette classe contient {classe.inscription_set.count()} élève(s). Supprimez d\'abord les inscriptions.'})
+            nom = classe.nom_classe
+            classe.delete()
+            return JsonResponse({'success': True, 'message': f'Classe {nom} supprimée avec succès'})
+        except Classe.DoesNotExist:
+            return JsonResponse({'success': False, 'error': 'Classe non trouvée'})
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)})
+    return JsonResponse({'success': False, 'error': 'Méthode non autorisée'})
+
+
+@csrf_exempt
+def toggle_classe(request, id):
+    if not request.session.get('user_id'):
+        return JsonResponse({'success': False, 'error': 'Non authentifié'}, status=401)
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            classe = Classe.objects.get(id=id)
+            classe.actif = data.get('actif', False)
+            classe.save()
+            return JsonResponse({'success': True, 'message': f'Classe {"activée" if classe.actif else "désactivée"} avec succès'})
+        except Classe.DoesNotExist:
+            return JsonResponse({'success': False, 'error': 'Classe non trouvée'})
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)})
+    return JsonResponse({'success': False, 'error': 'Méthode non autorisée'})
+
+
+@csrf_exempt
+def ajouter_option(request):
+    if not request.session.get('user_id'):
+        return JsonResponse({'success': False, 'error': 'Non authentifié'}, status=401)
+    if request.method == 'POST':
+        try:
+            option_id = request.POST.get('option_id')
+            nom_option = request.POST.get('nom_option')
+            code_option = request.POST.get('code_option')
+            actif = request.POST.get('actif') == 'on'
+            if option_id:
+                option = OptionEtude.objects.get(id=option_id)
+                if OptionEtude.objects.filter(code_option=code_option).exclude(id=option_id).exists():
+                    return JsonResponse({'success': False, 'error': 'Ce code option est déjà utilisé'})
+                option.nom_option = nom_option
+                option.code_option = code_option
+                option.actif = actif
+                option.save()
+                return JsonResponse({'success': True, 'message': f'Option {nom_option} modifiée avec succès'})
+            else:
+                if OptionEtude.objects.filter(code_option=code_option).exists():
+                    return JsonResponse({'success': False, 'error': 'Ce code option existe déjà'})
+                option = OptionEtude.objects.create(nom_option=nom_option, code_option=code_option, actif=actif)
+                return JsonResponse({'success': True, 'message': f'Option {nom_option} ajoutée avec succès'})
+        except OptionEtude.DoesNotExist:
+            return JsonResponse({'success': False, 'error': 'Option non trouvée'})
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)})
+    return JsonResponse({'success': False, 'error': 'Méthode non autorisée'})
+
+
+def get_option(request, id):
+    if not request.session.get('user_id'):
+        return JsonResponse({'success': False, 'error': 'Non authentifié'}, status=401)
+    try:
+        option = OptionEtude.objects.get(id=id)
+        return JsonResponse({'success': True, 'option': {
+            'id': option.id, 'nom_option': option.nom_option, 'code_option': option.code_option, 'actif': option.actif
+        }})
+    except OptionEtude.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Option non trouvée'})
+
+
+@csrf_exempt
+def supprimer_option(request, id):
+    if not request.session.get('user_id'):
+        return JsonResponse({'success': False, 'error': 'Non authentifié'}, status=401)
+    if request.method == 'DELETE':
+        try:
+            option = OptionEtude.objects.get(id=id)
+            if option.classe_set.exists():
+                return JsonResponse({'success': False, 'error': 'Cette option est utilisée par des classes. Supprimez d\'abord les classes associées.'})
+            nom = option.nom_option
+            option.delete()
+            return JsonResponse({'success': True, 'message': f'Option {nom} supprimée avec succès'})
+        except OptionEtude.DoesNotExist:
+            return JsonResponse({'success': False, 'error': 'Option non trouvée'})
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)})
+    return JsonResponse({'success': False, 'error': 'Méthode non autorisée'})
+
+
+@csrf_exempt
+def toggle_option(request, id):
+    if not request.session.get('user_id'):
+        return JsonResponse({'success': False, 'error': 'Non authentifié'}, status=401)
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            option = OptionEtude.objects.get(id=id)
+            option.actif = data.get('actif', False)
+            option.save()
+            return JsonResponse({'success': True, 'message': f'Option {"activée" if option.actif else "désactivée"} avec succès'})
+        except OptionEtude.DoesNotExist:
+            return JsonResponse({'success': False, 'error': 'Option non trouvée'})
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)})
+    return JsonResponse({'success': False, 'error': 'Méthode non autorisée'})
+
+
+# =====================================================
+# 5. GESTION DES ENSEIGNANTS
+# =====================================================
+
+def ajouter_enseignant_page(request):
+    if not request.session.get('user_id'):
+        return redirect('login')
+    if request.session.get('user_role') != 'DE':
+        messages.error(request, 'Accès non autorisé')
+        return redirect('login')
+    context = {
+        'user_nom': request.session.get('user_nom'),
+        'classes': Classe.objects.filter(actif=True),
+        'page_title': 'Ajouter un enseignant - CS KABA'
+    }
+    return render(request, 'Cote/admin/ajouter_enseignant.html', context)
+
+
+@csrf_exempt
+def ajouter_enseignant(request):
+    if not request.session.get('user_id'):
+        return JsonResponse({'success': False, 'error': 'Non authentifié'}, status=401)
+    if request.method == 'POST':
+        try:
+            nom = request.POST.get('nom')
+            postnom = request.POST.get('postnom', '')
+            prenom = request.POST.get('prenom')
+            sexe = request.POST.get('sexe')
+            date_naissance = request.POST.get('date_naissance')
+            lieu_naissance = request.POST.get('lieu_naissance', '')
+            email = request.POST.get('email')
+            telephone = request.POST.get('telephone', '')
+            adresse = request.POST.get('adresse', '')
+            specialite = request.POST.get('specialite')
+            date_embauche = request.POST.get('date_embauche')
+            password = request.POST.get('password')
+            password_confirm = request.POST.get('password_confirm')
+            if password != password_confirm:
+                return JsonResponse({'success': False, 'error': 'Les mots de passe ne correspondent pas'})
+            if len(password) < 6:
+                return JsonResponse({'success': False, 'error': 'Le mot de passe doit contenir au moins 6 caractères'})
+            if Utilisateur.objects.filter(email=email).exists():
+                return JsonResponse({'success': False, 'error': 'Cet email est déjà utilisé'})
+            personne = Personne.objects.create(
+                nom=nom, postnom=postnom, prenom=prenom, sexe=sexe,
+                date_naissance=date_naissance or None, lieu_naissance=lieu_naissance,
+                email=email, telephone=telephone, adresse=adresse
+            )
+            utilisateur = Utilisateur(id_personne=personne, email=email, role='ENSEIGNANT', est_actif=True)
+            utilisateur.set_password(password)
+            utilisateur.save()
+            Personnel.objects.create(id_utilisateur=utilisateur, specialite=specialite, date_embauche=date_embauche or datetime.now().date())
+            return JsonResponse({'success': True, 'message': f'Enseignant {nom} {prenom} ajouté avec succès'})
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)})
+    return JsonResponse({'success': False, 'error': 'Méthode non autorisée'})
+
+
+# =====================================================
+# 6. GESTION DES ÉLÈVES (page + API)
+# =====================================================
+
+def ajouter_eleve_page(request):
+    if not request.session.get('user_id'):
+        return redirect('login')
+    if request.session.get('user_role') != 'DE':
+        messages.error(request, 'Accès non autorisé')
+        return redirect('login')
+    classes = Classe.objects.filter(actif=True)
+    options = OptionEtude.objects.filter(actif=True)
+    annees = AnneeScolaire.objects.all().order_by('-id')
+    annee_active = AnneeScolaire.objects.filter(est_active=True).first()
+    parents = Personne.objects.filter(telephone__isnull=False).exclude(telephone='').exclude(telephone__exact='')
+    context = {
+        'user_nom': request.session.get('user_nom'),
+        'classes': classes,
+        'options': options,
+        'parents': parents,
+        'annees': annees,
+        'annee_active': annee_active,
+        'page_title': 'Ajouter un élève - CS KABA'
+    }
+    return render(request, 'Cote/admin/ajouter_eleve.html', context)
+
+
+@csrf_exempt
+def ajouter_eleve(request):
+    if not request.session.get('user_id'):
+        return JsonResponse({'success': False, 'error': 'Non authentifié'}, status=401)
+
+    if request.method == 'POST':
+        try:
+            nom = request.POST.get('nom')
+            postnom = request.POST.get('postnom', '')
+            prenom = request.POST.get('prenom')
+            sexe = request.POST.get('sexe')
+            date_naissance = request.POST.get('date_naissance')
+            lieu_naissance = request.POST.get('lieu_naissance', '')
+            adresse = request.POST.get('adresse', '')
+            photo = request.FILES.get('photo')
+            classe_id = request.POST.get('classe_id')
+            annee_scolaire_id = request.POST.get('annee_scolaire')
+            type_inscription = request.POST.get('type_inscription', 'NOUVEAU')
+            ecole_provenance = request.POST.get('ecole_provenance', '')
+            date_inscription_str = request.POST.get('date_inscription')
+            parent_id = request.POST.get('parent_id')
+            nom_parent = request.POST.get('nom_parent', '')
+            prenom_parent = request.POST.get('prenom_parent', '')
+            telephone_parent = request.POST.get('telephone_parent', '')
+            email_parent = request.POST.get('email_parent', '')
+            profession_parent = request.POST.get('profession_parent', '')
+            adresse_parent = request.POST.get('adresse_parent', '')
+
+            if not nom or not prenom or not sexe:
+                return JsonResponse({'success': False, 'error': 'Nom, prénom et sexe sont requis'})
+            if not classe_id:
+                return JsonResponse({'success': False, 'error': 'Veuillez sélectionner une classe'})
+            if not annee_scolaire_id:
+                return JsonResponse({'success': False, 'error': 'Année scolaire non spécifiée'})
+
+            try:
+                classe = Classe.objects.get(id=classe_id, actif=True)
+            except Classe.DoesNotExist:
+                return JsonResponse({'success': False, 'error': 'Classe invalide ou inactive'})
+            try:
+                annee_scolaire_obj = AnneeScolaire.objects.get(id=annee_scolaire_id)
+            except AnneeScolaire.DoesNotExist:
+                return JsonResponse({'success': False, 'error': 'Année scolaire invalide'})
+
+            parent_personne = None
+            if parent_id:
+                try:
+                    parent_personne = Personne.objects.get(id=parent_id)
+                    if telephone_parent:
+                        parent_personne.telephone = telephone_parent
+                    if email_parent:
+                        parent_personne.email = email_parent
+                    if adresse_parent:
+                        parent_personne.adresse = adresse_parent
+                    parent_personne.save()
+                except Personne.DoesNotExist:
+                    return JsonResponse({'success': False, 'error': 'Parent introuvable'})
+            elif nom_parent and telephone_parent:
+                parent_existant = Personne.objects.filter(telephone=telephone_parent).first()
+                if parent_existant:
+                    return JsonResponse({'success': False, 'error': f'Un parent avec le téléphone {telephone_parent} existe déjà (ID {parent_existant.id}). Veuillez le sélectionner dans la liste.'})
+                parent_existant_nom = Personne.objects.filter(nom__iexact=nom_parent, prenom__iexact=prenom_parent).first()
+                if parent_existant_nom:
+                    return JsonResponse({'success': False, 'error': f'Un parent avec le nom "{nom_parent} {prenom_parent}" existe déjà. Veuillez le sélectionner dans la liste.'})
+                parent_personne = Personne.objects.create(
+                    nom=nom_parent, prenom=prenom_parent, telephone=telephone_parent,
+                    email=email_parent, adresse=adresse_parent
+                )
+            else:
+                return JsonResponse({'success': False, 'error': 'Veuillez sélectionner un parent existant ou saisir nom et téléphone du nouveau parent'})
+
+            if date_inscription_str:
+                date_inscription = datetime.strptime(date_inscription_str, '%Y-%m-%d').date()
+            else:
+                date_inscription = datetime.now().date()
+
+            annee_mat = date_inscription.year
+            jour = date_inscription.strftime('%d')
+            mois = date_inscription.strftime('%m')
+            compteur = Inscription.objects.filter(date_inscription=date_inscription, id_annee=annee_scolaire_obj).count() + 1
+            compteur_str = str(compteur).zfill(3)
+            matricule = f"KABA{annee_mat}{jour}{mois}{compteur_str}"
+            while Eleve.objects.filter(matricule=matricule).exists():
+                compteur += 1
+                compteur_str = str(compteur).zfill(3)
+                matricule = f"KABA{annee_mat}{jour}{mois}{compteur_str}"
+
+            personne = Personne.objects.create(
+                nom=nom, postnom=postnom, prenom=prenom, sexe=sexe,
+                date_naissance=date_naissance or None, lieu_naissance=lieu_naissance,
+                adresse=adresse
+            )
+            eleve = Eleve.objects.create(
+                id_personne=personne, matricule=matricule,
+                telephone_parent=telephone_parent or (parent_personne.telephone if parent_personne else ''),
+                email_parent=email_parent or (parent_personne.email if parent_personne else ''),
+                est_actif=True
+            )
+            if photo:
+                from django.core.files.storage import default_storage
+                from django.core.files.base import ContentFile
+                import os
+                ext = os.path.splitext(photo.name)[1].lower()
+                if ext not in ['.jpg', '.jpeg', '.png', '.gif']:
+                    eleve.delete()
+                    personne.delete()
+                    return JsonResponse({'success': False, 'error': 'Format de photo non supporté (JPG, PNG, GIF)'})
+                nouveau_nom = f"{matricule}{ext}"
+                chemin = default_storage.save(f'photos/eleves/{nouveau_nom}', ContentFile(photo.read()))
+                eleve.photo = chemin
+                eleve.save()
+            Inscription.objects.create(
+                id_eleve=eleve, id_classe=classe, id_annee=annee_scolaire_obj,
+                type_inscription=type_inscription, date_inscription=date_inscription, est_active=True
+            )
+            return JsonResponse({'success': True, 'message': f'Élève {nom} {prenom} inscrit avec succès en {classe.nom_classe}. Matricule: {matricule}'})
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)})
+    return JsonResponse({'success': False, 'error': 'Méthode non autorisée'})
+
+
+# =====================================================
+# 6.1 LISTE DES ÉLÈVES (avec filtres)
+# =====================================================
+
+def liste_eleves(request):
+    if not request.session.get('user_id'):
+        return redirect('login')
+    if request.session.get('user_role') != 'DE':
+        messages.error(request, 'Accès non autorisé')
+        return redirect('login')
+    
+    cycle = request.GET.get('cycle', '')
+    classe_id = request.GET.get('classe', '')
+    option_id = request.GET.get('option', '')
+    
+    annee_active = AnneeScolaire.objects.filter(est_active=True).first()
+    if annee_active:
+        inscriptions = Inscription.objects.filter(id_annee=annee_active, est_active=True).select_related(
+            'id_eleve__id_personne', 'id_classe', 'id_classe__id_option'
+        )
+    else:
+        inscriptions = Inscription.objects.none()
+    
+    if cycle == 'CO':
+        inscriptions = inscriptions.filter(id_classe__est_cycle_orientation=True)
+    elif cycle == 'SECONDAIRE':
+        inscriptions = inscriptions.filter(id_classe__est_cycle_orientation=False)
+    if classe_id:
+        inscriptions = inscriptions.filter(id_classe_id=classe_id)
+    if option_id:
+        inscriptions = inscriptions.filter(id_classe__id_option_id=option_id)
+    
+    eleves_list = []
+    for ins in inscriptions:
+        eleve = ins.id_eleve
+        eleves_list.append({
+            'id': eleve.id, 'matricule': eleve.matricule, 'nom': eleve.id_personne.nom,
+            'postnom': eleve.id_personne.postnom or '', 'prenom': eleve.id_personne.prenom,
+            'sexe': eleve.id_personne.sexe, 'classe_nom': ins.id_classe.nom_classe,
+            'classe_id': ins.id_classe.id, 'option_nom': ins.id_classe.id_option.nom_option if ins.id_classe.id_option else None,
+            'est_cycle_orientation': ins.id_classe.est_cycle_orientation,
+            'photo': eleve.photo.url if eleve.photo else None,
+        })
+    
+    cycles = [{'value': 'CO', 'label': 'Cycle d\'Orientation'}, {'value': 'SECONDAIRE', 'label': 'Secondaire'}]
+    classes = Classe.objects.filter(actif=True).order_by('est_cycle_orientation', 'nom_classe')
+    options = OptionEtude.objects.filter(actif=True).order_by('nom_option')
+    
+    context = {
+        'user_nom': request.session.get('user_nom'), 'eleves': eleves_list, 'cycles': cycles,
+        'classes': classes, 'options': options, 'cycle_selected': cycle,
+        'classe_selected': int(classe_id) if classe_id else None,
+        'option_selected': int(option_id) if option_id else None, 'annee_active': annee_active,
+        'page_title': 'Liste des élèves - CS KABA'
+    }
+    return render(request, 'Cote/admin/liste_eleves.html', context)
+
+
+# =====================================================
+# 6.2 DÉTAIL D'UN ÉLÈVE
+# =====================================================
+
+def detail_eleve(request, eleve_id):
+    if not request.session.get('user_id'):
+        return redirect('login')
+    if request.session.get('user_role') != 'DE':
+        messages.error(request, 'Accès non autorisé')
+        return redirect('login')
+    
+    try:
+        eleve = Eleve.objects.select_related('id_personne').get(id=eleve_id, est_actif=True)
+    except Eleve.DoesNotExist:
+        messages.error(request, 'Élève introuvable')
+        return redirect('liste_eleves')
+    
+    annee_active = AnneeScolaire.objects.filter(est_active=True).first()
+    inscription_actuelle = None
+    if annee_active:
+        try:
+            inscription_actuelle = Inscription.objects.select_related('id_classe').get(
+                id_eleve=eleve, id_annee=annee_active, est_active=True
+            )
+        except Inscription.DoesNotExist:
+            pass
+    inscriptions_passees = Inscription.objects.filter(id_eleve=eleve).exclude(id_annee=annee_active).select_related('id_annee', 'id_classe').order_by('-date_inscription')
+    
+    context = {
+        'user_nom': request.session.get('user_nom'), 'eleve': eleve, 'personne': eleve.id_personne,
+        'photo_url': eleve.photo.url if eleve.photo else None, 'inscription_actuelle': inscription_actuelle,
+        'inscriptions_passees': inscriptions_passees, 'annee_active': annee_active,
+        'page_title': f'Détail de {eleve.id_personne.nom} {eleve.id_personne.prenom} - CS KABA'
+    }
+    return render(request, 'Cote/admin/detail_eleve.html', context)
+
+
+# =====================================================
+# 6.3 MODIFICATION D'UN ÉLÈVE (page + API)
+# =====================================================
+
+def modifier_eleve_page(request, eleve_id):
+    if not request.session.get('user_id'):
+        return redirect('login')
+    if request.session.get('user_role') != 'DE':
+        messages.error(request, 'Accès non autorisé')
+        return redirect('login')
+    
+    try:
+        eleve = Eleve.objects.select_related('id_personne').get(id=eleve_id, est_actif=True)
+    except Eleve.DoesNotExist:
+        messages.error(request, 'Élève introuvable')
+        return redirect('liste_eleves')
+    
+    classes = Classe.objects.filter(actif=True).order_by('nom_classe')
+    annee_active = AnneeScolaire.objects.filter(est_active=True).first()
+    inscription_actuelle = None
+    if annee_active:
+        try:
+            inscription_actuelle = Inscription.objects.get(id_eleve=eleve, id_annee=annee_active, est_active=True)
+        except Inscription.DoesNotExist:
+            pass
+    parents = Personne.objects.filter(telephone__isnull=False).exclude(telephone='').exclude(telephone__exact='')
+    parent_personne = None
+    if eleve.telephone_parent:
+        parent_personne = parents.filter(telephone=eleve.telephone_parent).first()
+    
+    context = {
+        'user_nom': request.session.get('user_nom'), 'eleve': eleve, 'personne': eleve.id_personne,
+        'classes': classes, 'annee_active': annee_active, 'inscription_actuelle': inscription_actuelle,
+        'parents': parents, 'parent_personne': parent_personne,
+        'parent_nom': parent_personne.nom if parent_personne else '',
+        'parent_prenom': parent_personne.prenom if parent_personne else '',
+        'parent_telephone': parent_personne.telephone if parent_personne else eleve.telephone_parent or '',
+        'parent_email': parent_personne.email if parent_personne else eleve.email_parent or '',
+        'parent_profession': '', 'parent_adresse': parent_personne.adresse if parent_personne else '',
+        'page_title': f'Modifier {eleve.id_personne.nom} {eleve.id_personne.prenom} - CS KABA'
+    }
+    return render(request, 'Cote/admin/modifier_eleve.html', context)
+
+
+@csrf_exempt
+def modifier_eleve(request, eleve_id):
+    if not request.session.get('user_id'):
+        return JsonResponse({'success': False, 'error': 'Non authentifié'}, status=401)
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'Méthode non autorisée'}, status=405)
+    
+    try:
+        eleve = Eleve.objects.select_related('id_personne').get(id=eleve_id, est_actif=True)
+    except Eleve.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Élève introuvable'})
+    
+    try:
+        nom = request.POST.get('nom')
+        postnom = request.POST.get('postnom', '')
+        prenom = request.POST.get('prenom')
+        sexe = request.POST.get('sexe')
+        date_naissance = request.POST.get('date_naissance')
+        lieu_naissance = request.POST.get('lieu_naissance', '')
+        adresse = request.POST.get('adresse', '')
+        telephone_parent = request.POST.get('telephone_parent', '')
+        email_parent = request.POST.get('email_parent', '')
+        photo = request.FILES.get('photo')
+        classe_id = request.POST.get('classe_id')
+        type_inscription = request.POST.get('type_inscription', 'NOUVEAU')
+        parent_id = request.POST.get('parent_id')
+        nom_parent = request.POST.get('nom_parent', '')
+        prenom_parent = request.POST.get('prenom_parent', '')
+        adresse_parent = request.POST.get('adresse_parent', '')
+        
+        personne = eleve.id_personne
+        personne.nom = nom
+        personne.postnom = postnom
+        personne.prenom = prenom
+        personne.sexe = sexe
+        personne.date_naissance = date_naissance or None
+        personne.lieu_naissance = lieu_naissance
+        personne.adresse = adresse
+        personne.save()
+        
+        if parent_id:
+            try:
+                parent_personne = Personne.objects.get(id=parent_id)
+                if telephone_parent:
+                    parent_personne.telephone = telephone_parent
+                if email_parent:
+                    parent_personne.email = email_parent
+                if adresse_parent:
+                    parent_personne.adresse = adresse_parent
+                parent_personne.save()
+                eleve.telephone_parent = parent_personne.telephone
+                eleve.email_parent = parent_personne.email
+            except Personne.DoesNotExist:
+                return JsonResponse({'success': False, 'error': 'Parent introuvable'})
+        elif nom_parent and telephone_parent:
+            parent_existant = Personne.objects.filter(telephone=telephone_parent).first()
+            if parent_existant:
+                return JsonResponse({'success': False, 'error': f'Un parent avec le téléphone {telephone_parent} existe déjà. Veuillez le sélectionner dans la liste.'})
+            parent_personne = Personne.objects.create(
+                nom=nom_parent, prenom=prenom_parent, telephone=telephone_parent,
+                email=email_parent, adresse=adresse_parent
+            )
+            eleve.telephone_parent = telephone_parent
+            eleve.email_parent = email_parent
+        
+        if photo:
+            from django.core.files.storage import default_storage
+            from django.core.files.base import ContentFile
+            import os
+            ext = os.path.splitext(photo.name)[1].lower()
+            if ext not in ['.jpg', '.jpeg', '.png', '.gif']:
+                return JsonResponse({'success': False, 'error': 'Format de photo non supporté (JPG, PNG, GIF)'})
+            nouveau_nom = f"{eleve.matricule}{ext}"
+            chemin = default_storage.save(f'photos/eleves/{nouveau_nom}', ContentFile(photo.read()))
+            if eleve.photo:
+                default_storage.delete(eleve.photo.name)
+            eleve.photo = chemin
+        eleve.save()
+        
+        annee_active = AnneeScolaire.objects.filter(est_active=True).first()
+        if annee_active and classe_id:
+            Inscription.objects.update_or_create(
+                id_eleve=eleve, id_annee=annee_active,
+                defaults={'id_classe_id': classe_id, 'type_inscription': type_inscription, 'est_active': True}
+            )
+        return JsonResponse({'success': True, 'message': 'Élève modifié avec succès'})
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)})
+
+
+# =====================================================
+# 6.4 REÇU D'INSCRIPTION (HTML imprimable)
+# =====================================================
+
+def generer_recu_inscription(request, eleve_id):
+    if not request.session.get('user_id'):
+        return redirect('login')
+    if request.session.get('user_role') != 'DE':
+        messages.error(request, 'Accès non autorisé')
+        return redirect('dashboard_de')
+    
+    try:
+        eleve = Eleve.objects.select_related('id_personne').get(id=eleve_id, est_actif=True)
+    except Eleve.DoesNotExist:
+        messages.error(request, 'Élève introuvable')
+        return redirect('liste_eleves')
+    
+    annee_active = AnneeScolaire.objects.filter(est_active=True).first()
+    if not annee_active:
+        messages.error(request, 'Aucune année scolaire active')
+        return redirect('liste_eleves')
+    try:
+        inscription = Inscription.objects.select_related('id_classe').get(id_eleve=eleve, id_annee=annee_active, est_active=True)
+    except Inscription.DoesNotExist:
+        messages.error(request, 'Cet élève n\'est pas inscrit pour l\'année en cours')
+        return redirect('liste_eleves')
+    
+    inscriptions_anterieures = Inscription.objects.filter(id_eleve=eleve).exclude(id_annee=annee_active).count()
+    est_reinscription = inscriptions_anterieures > 0
+    montant = 5 if est_reinscription else 10
+    titre_recu = "REÇU DE PAIEMENT FRAIS RÉINSCRIPTION" if est_reinscription else "REÇU DE PAIEMENT FRAIS INSCRIPTION"
+    numero_recu = f"REC-{annee_active.annee_scolaire.replace('-', '')}-{eleve.matricule}"
+    date_inscription = inscription.date_inscription.strftime("%d/%m/%Y")
+    
+    def montant_en_lettres(m):
+        return "CINQ" if m == 5 else "DIX" if m == 10 else str(m)
+    montant_lettres = montant_en_lettres(montant) + " DOLLARS AMÉRICAINS"
+    
+    context = {
+        'user_nom': request.session.get('user_nom'), 'eleve': eleve, 'personne': eleve.id_personne,
+        'classe_nom': inscription.id_classe.nom_classe, 'annee_scolaire': annee_active.annee_scolaire,
+        'numero_recu': numero_recu, 'montant': montant, 'montant_lettres': montant_lettres,
+        'titre_recu': titre_recu, 'date_inscription': date_inscription, 'est_reinscription': est_reinscription,
+        'photo_url': eleve.photo.url if eleve.photo else None,
+    }
+    return render(request, 'Cote/admin/recu_inscription.html', context)
+
+
+# =====================================================
+# 7. STATISTIQUES, PALMARÈS, EXPORTS
+# =====================================================
+
+def stats_data(request):
+    if not request.session.get('user_id'):
+        return JsonResponse({'error': 'Non authentifié'}, status=401)
+
+    annee_active = AnneeScolaire.objects.filter(est_active=True).first()
+    if annee_active:
+        total_eleves = Inscription.objects.filter(id_annee=annee_active, est_active=True).count()
+        total_enseignants = Personnel.objects.filter(
+            Q(attributioncours__id_annee=annee_active) |
+            Q(titulaireclasse__id_annee=annee_active)
+        ).distinct().count()
+        total_classes = Classe.objects.filter(inscription__id_annee=annee_active, inscription__est_active=True).distinct().count()
+        inscriptions = Inscription.objects.filter(id_annee=annee_active, est_active=True)
+        total_eleves_inscrits = inscriptions.count()
+        eleves_reussis = 0
+        for inscription in inscriptions:
+            moyenne = Note.objects.filter(id_eleve=inscription.id_eleve, id_annee=annee_active).aggregate(Avg('note'))['note__avg']
+            if moyenne and moyenne >= 10:
+                eleves_reussis += 1
+        taux_reussite = int((eleves_reussis / total_eleves_inscrits) * 100) if total_eleves_inscrits > 0 else 0
+    else:
+        total_eleves = 0
+        total_enseignants = 0
+        total_classes = 0
+        taux_reussite = 0
+
+    data = {
+        'total_eleves': total_eleves,
+        'total_enseignants': total_enseignants,
+        'total_classes': total_classes,
+        'taux_reussite': taux_reussite if taux_reussite > 0 else 0,
+    }
+    return JsonResponse(data)
+
+
+@csrf_exempt
+def generer_palmares(request):
+    if not request.session.get('user_id'):
+        return JsonResponse({'success': False, 'error': 'Non authentifié'}, status=401)
+    if request.method == 'POST':
+        try:
+            annee_active = AnneeScolaire.objects.filter(est_active=True).first()
+            if not annee_active:
+                return JsonResponse({'success': False, 'error': 'Aucune année scolaire active'})
+            Palmares.objects.filter(id_annee=annee_active).delete()
+            for classe in Classe.objects.filter(actif=True):
+                inscriptions = Inscription.objects.filter(id_classe=classe, id_annee=annee_active, est_active=True).select_related('id_eleve')
+                eleves_avec_moyennes = []
+                for inscription in inscriptions:
+                    moyenne = Note.objects.filter(id_eleve=inscription.id_eleve, id_annee=annee_active).aggregate(Avg('note'))['note__avg']
+                    if moyenne:
+                        mention = 'EXCELLENT' if moyenne >= 16 else 'TRES BIEN' if moyenne >= 14 else 'BIEN' if moyenne >= 12 else 'ASSEZ BIEN' if moyenne >= 10 else 'PASSABLE'
+                        eleves_avec_moyennes.append({'eleve': inscription.id_eleve, 'moyenne': moyenne, 'mention': mention})
+                eleves_avec_moyennes.sort(key=lambda x: x['moyenne'], reverse=True)
+                for rang, item in enumerate(eleves_avec_moyennes, 1):
+                    Palmares.objects.create(id_annee=annee_active, id_classe=classe, id_eleve=item['eleve'], rang=rang, mention=item['mention'])
+            return JsonResponse({'success': True, 'message': 'Palmarès généré avec succès'})
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)})
+    return JsonResponse({'success': False, 'error': 'Méthode non autorisée'})
+
+
+def export_pdf(request):
+    if not request.session.get('user_id'):
+        return redirect('login')
+    messages.info(request, 'Fonctionnalité d\'export PDF en développement')
+    return redirect('dashboard_de')
+
+
+def export_excel(request):
+    if not request.session.get('user_id'):
+        return redirect('login')
+    messages.info(request, 'Fonctionnalité d\'export Excel en développement')
+    return redirect('dashboard_de')
+
+
+@csrf_exempt
+def definir_annee(request):
+    if not request.session.get('user_id'):
+        return JsonResponse({'success': False, 'error': 'Non authentifié'}, status=401)
+    if request.method == 'POST':
+        try:
+            annee_scolaire = request.POST.get('annee_scolaire')
+            date_debut = request.POST.get('date_debut')
+            date_fin = request.POST.get('date_fin')
+            AnneeScolaire.objects.filter(est_active=True).update(est_active=False)
+            AnneeScolaire.objects.create(annee_scolaire=annee_scolaire, date_debut=date_debut, date_fin=date_fin, est_active=True)
+            return JsonResponse({'success': True, 'message': f'Année scolaire {annee_scolaire} définie avec succès'})
+        except Exception as e:
+            return JsonResponse({'success': False, 'error': str(e)})
+    return JsonResponse({'success': False, 'error': 'Méthode non autorisée'})
+
+
+# =====================================================
+# 8. GESTION DES COURS, ATTRIBUTIONS ET TITULAIRES
+# =====================================================
+
+def cours_de_page(request):
+    if not request.session.get('user_id'):
+        return redirect('login')
+    if request.session.get('user_role') != 'DE':
+        messages.error(request, 'Accès non autorisé')
+        return redirect('login')
+    
+    cours_list = Cours.objects.all().select_related('id_option').order_by('nom_cours')
+    cycles = [{'value': 'CO', 'label': 'Cycle d\'Orientation (7e-8e)'}, {'value': 'SECONDAIRE', 'label': 'Secondaire'}]
+    options = OptionEtude.objects.filter(actif=True).order_by('nom_option')
+    classes = Classe.objects.filter(actif=True).order_by('nom_classe')
+    enseignants = Personnel.objects.filter(id_utilisateur__role='ENSEIGNANT', id_utilisateur__est_actif=True).select_related('id_utilisateur__id_personne')
+    annee_active = AnneeScolaire.objects.filter(est_active=True).first()
+    titulaires = TitulaireClasse.objects.filter(id_annee=annee_active).select_related('id_personnel__id_utilisateur__id_personne', 'id_classe') if annee_active else []
+    
+    context = {
+        'user_nom': request.session.get('user_nom'), 'cours_list': cours_list, 'cycles': cycles,
+        'options': options, 'classes': classes, 'enseignants': enseignants, 'annee_active': annee_active,
+        'titulaires': titulaires,
+        'classes_json': json.dumps([{'id': c.id, 'nom_classe': c.nom_classe, 'est_cycle_orientation': c.est_cycle_orientation} for c in classes]),
+        'page_title': 'Gestion des cours - CS KABA'
+    }
+    return render(request, 'Cote/admin/cours_de.html', context)
+
+
+@csrf_exempt
+def ajouter_cours(request):
+    if not request.session.get('user_id'):
+        return JsonResponse({'success': False, 'error': 'Non authentifié'}, status=401)
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'Méthode non autorisée'}, status=405)
+    
+    try:
+        nom_cours = request.POST.get('nom_cours')
+        code_cours = request.POST.get('code_cours')
+        coefficient = request.POST.get('coefficient', 1)
+        description = request.POST.get('description', '')
+        cycle = request.POST.get('cycle')
+        option_id = request.POST.get('option_id')
+        
+        if not nom_cours or not code_cours:
+            return JsonResponse({'success': False, 'error': 'Nom et code du cours requis'})
+        if Cours.objects.filter(code_cours=code_cours).exists():
+            return JsonResponse({'success': False, 'error': 'Ce code de cours existe déjà'})
+        
+        cours = Cours.objects.create(
+            nom_cours=nom_cours, code_cours=code_cours, coefficient=coefficient,
+            description=description, id_option_id=option_id if option_id and cycle == 'SECONDAIRE' else None,
+            created_by_id=request.session.get('user_id')
+        )
+        return JsonResponse({'success': True, 'message': 'Cours ajouté avec succès', 'cours_id': cours.id})
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)})
+
+
+def get_cours(request, id):
+    if not request.session.get('user_id'):
+        return JsonResponse({'success': False, 'error': 'Non authentifié'}, status=401)
+    try:
+        cours = Cours.objects.get(id=id)
+        return JsonResponse({'success': True, 'cours': {
+            'id': cours.id, 'nom_cours': cours.nom_cours, 'code_cours': cours.code_cours,
+            'coefficient': cours.coefficient, 'description': cours.description,
+            'id_option': cours.id_option.id if cours.id_option else None
+        }})
+    except Cours.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Cours introuvable'})
+
+
+@csrf_exempt
+def modifier_cours(request, id):
+    if not request.session.get('user_id'):
+        return JsonResponse({'success': False, 'error': 'Non authentifié'}, status=401)
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'Méthode non autorisée'}, status=405)
+    
+    try:
+        cours = Cours.objects.get(id=id)
+        cours.nom_cours = request.POST.get('nom_cours')
+        cours.code_cours = request.POST.get('code_cours')
+        cours.coefficient = request.POST.get('coefficient', 1)
+        cours.description = request.POST.get('description', '')
+        cycle = request.POST.get('cycle')
+        option_id = request.POST.get('option_id')
+        cours.id_option_id = option_id if option_id and cycle == 'SECONDAIRE' else None
+        cours.save()
+        return JsonResponse({'success': True, 'message': 'Cours modifié avec succès'})
+    except Cours.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Cours introuvable'})
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)})
+
+
+@csrf_exempt
+def supprimer_cours(request, id):
+    if not request.session.get('user_id'):
+        return JsonResponse({'success': False, 'error': 'Non authentifié'}, status=401)
+    if request.method != 'DELETE':
+        return JsonResponse({'success': False, 'error': 'Méthode non autorisée'}, status=405)
+    
+    try:
+        cours = Cours.objects.get(id=id)
+        if AttributionCours.objects.filter(id_cours=cours).exists():
+            return JsonResponse({'success': False, 'error': 'Ce cours est déjà attribué à des classes. Supprimez d\'abord les attributions.'})
+        nom = cours.nom_cours
+        cours.delete()
+        return JsonResponse({'success': True, 'message': f'Cours {nom} supprimé'})
+    except Cours.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Cours introuvable'})
+
+
+@csrf_exempt
+def get_cours_par_option(request):
+    if not request.session.get('user_id'):
+        return JsonResponse({'error': 'Non authentifié'}, status=401)
+    
+    cycle = request.GET.get('cycle')
+    option_id = request.GET.get('option_id')
+    
+    if cycle == 'CO':
+        cours = Cours.objects.filter(id_option__isnull=True)
+    elif cycle == 'SECONDAIRE' and option_id:
+        cours = Cours.objects.filter(Q(id_option_id=option_id) | Q(id_option__isnull=True))
+    else:
+        cours = Cours.objects.none()
+    data = [{'id': c.id, 'nom': c.nom_cours, 'code': c.code_cours, 'coefficient': c.coefficient} for c in cours]
+    return JsonResponse({'success': True, 'cours': data})
+
+
+@csrf_exempt
+def attribuer_cours(request):
+    if not request.session.get('user_id'):
+        return JsonResponse({'success': False, 'error': 'Non authentifié'}, status=401)
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'Méthode non autorisée'}, status=405)
+    
+    try:
+        cours_id = request.POST.get('cours_id')
+        personnel_id = request.POST.get('personnel_id')
+        classe_id = request.POST.get('classe_id')
+        annee_id = request.POST.get('annee_id')
+        
+        if not all([cours_id, personnel_id, classe_id, annee_id]):
+            return JsonResponse({'success': False, 'error': 'Tous les champs sont requis'})
+        if AttributionCours.objects.filter(id_cours_id=cours_id, id_classe_id=classe_id, id_annee_id=annee_id).exists():
+            return JsonResponse({'success': False, 'error': 'Ce cours est déjà attribué à cette classe'})
+        AttributionCours.objects.create(
+            id_personnel_id=personnel_id, id_cours_id=cours_id,
+            id_classe_id=classe_id, id_annee_id=annee_id, est_active=True
+        )
+        return JsonResponse({'success': True, 'message': 'Cours attribué avec succès'})
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)})
+
+
+def get_attributions_classe(request):
+    if not request.session.get('user_id'):
+        return JsonResponse({'error': 'Non authentifié'}, status=401)
+    classe_id = request.GET.get('classe_id')
+    annee_id = request.GET.get('annee_id')
+    if not classe_id or not annee_id:
+        return JsonResponse({'error': 'Paramètres manquants'}, status=400)
+    attributions = AttributionCours.objects.filter(
+        id_classe_id=classe_id, id_annee_id=annee_id, est_active=True
+    ).select_related('id_cours', 'id_personnel__id_utilisateur__id_personne')
+    data = [{'id': a.id, 'cours_nom': a.id_cours.nom_cours, 'cours_code': a.id_cours.code_cours,
+             'enseignant': f"{a.id_personnel.id_utilisateur.id_personne.nom} {a.id_personnel.id_utilisateur.id_personne.prenom}"}
+            for a in attributions]
+    return JsonResponse({'success': True, 'attributions': data})
+
+
+@csrf_exempt
+def supprimer_attribution(request, attribution_id):
+    if not request.session.get('user_id'):
+        return JsonResponse({'success': False, 'error': 'Non authentifié'}, status=401)
+    if request.method != 'DELETE':
+        return JsonResponse({'success': False, 'error': 'Méthode non autorisée'}, status=405)
+    try:
+        attribution = AttributionCours.objects.get(id=attribution_id)
+        attribution.delete()
+        return JsonResponse({'success': True, 'message': 'Attribution supprimée'})
+    except AttributionCours.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Attribution introuvable'})
+
+
+# ----- Gestion des titulaires (corrigée avec contraintes) -----
+
+@csrf_exempt
+def definir_titulaire(request):
+    if not request.session.get('user_id'):
+        return JsonResponse({'success': False, 'error': 'Non authentifié'}, status=401)
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'Méthode non autorisée'}, status=405)
+    
+    try:
+        classe_id = request.POST.get('classe_id')
+        personnel_id = request.POST.get('personnel_id')
+        annee_id = request.POST.get('annee_id')
+        
+        if not classe_id or not annee_id:
+            return JsonResponse({'success': False, 'error': 'Classe et année requises'})
+        
+        if not personnel_id:
+            TitulaireClasse.objects.filter(id_classe_id=classe_id, id_annee_id=annee_id).delete()
+            return JsonResponse({'success': True, 'message': 'Titulaire supprimé'})
+        
+        autre_titulaire = TitulaireClasse.objects.filter(id_personnel_id=personnel_id, id_annee_id=annee_id).exclude(id_classe_id=classe_id).first()
+        if autre_titulaire:
+            return JsonResponse({'success': False, 'error': f'Cet enseignant est déjà titulaire de la classe "{autre_titulaire.id_classe.nom_classe}" pour cette année.'})
+        
+        titulaire, created = TitulaireClasse.objects.update_or_create(
+            id_classe_id=classe_id, id_annee_id=annee_id,
+            defaults={'id_personnel_id': personnel_id, 'est_actif': True}
+        )
+        return JsonResponse({'success': True, 'message': 'Titulaire désigné avec succès' if created else 'Titulaire mis à jour avec succès'})
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)})
+
+
+def get_titulaire(request):
+    if not request.session.get('user_id'):
+        return JsonResponse({'error': 'Non authentifié'}, status=401)
+    classe_id = request.GET.get('classe_id')
+    annee_id = request.GET.get('annee_id')
+    if not classe_id or not annee_id:
+        return JsonResponse({'error': 'Paramètres manquants'}, status=400)
+    titulaire = TitulaireClasse.objects.filter(id_classe_id=classe_id, id_annee_id=annee_id).select_related('id_personnel__id_utilisateur__id_personne').first()
+    if titulaire:
+        data = {'id': titulaire.id, 'personnel_id': titulaire.id_personnel_id,
+                'nom': f"{titulaire.id_personnel.id_utilisateur.id_personne.nom} {titulaire.id_personnel.id_utilisateur.id_personne.prenom}"}
+    else:
+        data = None
+    return JsonResponse({'success': True, 'titulaire': data})
+
+
+@csrf_exempt
+def supprimer_titulaire_par_id(request, titulaire_id):
+    if not request.session.get('user_id'):
+        return JsonResponse({'success': False, 'error': 'Non authentifié'}, status=401)
+    if request.method != 'DELETE':
+        return JsonResponse({'success': False, 'error': 'Méthode non autorisée'}, status=405)
+    try:
+        titulaire = TitulaireClasse.objects.get(id=titulaire_id)
+        titulaire.delete()
+        return JsonResponse({'success': True, 'message': 'Titulaire supprimé avec succès'})
+    except TitulaireClasse.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Titulaire introuvable'})
+
+
+def get_titulaires_liste(request):
+    if not request.session.get('user_id'):
+        return JsonResponse({'error': 'Non authentifié'}, status=401)
+    annee_id = request.GET.get('annee_id')
+    if not annee_id:
+        return JsonResponse({'error': 'Année non spécifiée'}, status=400)
+    titulaires = TitulaireClasse.objects.filter(id_annee_id=annee_id).select_related(
+        'id_personnel__id_utilisateur__id_personne', 'id_classe', 'id_annee'
+    )
+    data = [{
+        'id': t.id,
+        'enseignant_nom': f"{t.id_personnel.id_utilisateur.id_personne.nom} {t.id_personnel.id_utilisateur.id_personne.prenom}",
+        'classe_nom': t.id_classe.nom_classe,
+        'annee_scolaire': t.id_annee.annee_scolaire,
+    } for t in titulaires]
+    return JsonResponse({'success': True, 'titulaires': data})
+
+
+@csrf_exempt
+def filtrer_classes_par_cycle(request):
+    if not request.session.get('user_id'):
+        return JsonResponse({'error': 'Non authentifié'}, status=401)
+    cycle = request.GET.get('cycle')
+    if cycle == 'CO':
+        classes = Classe.objects.filter(est_cycle_orientation=True, actif=True).order_by('nom_classe')
+    elif cycle == 'SECONDAIRE':
+        classes = Classe.objects.filter(est_cycle_orientation=False, actif=True).order_by('nom_classe')
+    else:
+        classes = Classe.objects.none()
+    data = [{'id': c.id, 'nom_classe': c.nom_classe} for c in classes]
+    return JsonResponse({'success': True, 'classes': data})
+
+
+# =====================================================
+# ESPACE ENSEIGNANT
+# =====================================================
+
+def dashboard_enseignant(request):
+    if not request.session.get('user_id'):
+        return redirect('login')
+    if request.session.get('user_role') != 'ENSEIGNANT':
+        messages.error(request, 'Accès non autorisé')
+        return redirect('login')
+    context = {
+        'user_nom': request.session.get('user_nom'),
+        'user_role': request.session.get('user_role'),
+        'page_title': 'Dashboard Enseignant - CS KABA'
+    }
+    return render(request, 'Cote/enseignant/dashboard_enseignant.html', context)
+
+
+@csrf_exempt
+def get_enseignant_data(request):
+    if not request.session.get('user_id'):
+        return JsonResponse({'error': 'Non authentifié'}, status=401)
+    
+    user_id = request.session.get('user_id')
+    try:
+        personnel = Personnel.objects.get(id_utilisateur_id=user_id)
+    except Personnel.DoesNotExist:
+        return JsonResponse({'error': 'Personnel non trouvé pour cet utilisateur'}, status=404)
+    
+    annee_active = AnneeScolaire.objects.filter(est_active=True).first()
+    if not annee_active:
+        return JsonResponse({'error': 'Aucune année scolaire active'}, status=400)
+    
+    attributions = AttributionCours.objects.filter(
+        id_personnel=personnel,
+        id_annee=annee_active,
+        est_active=True
+    ).select_related('id_cours', 'id_classe', 'id_classe__id_option')
+    
+    cours_data = []
+    classes_set = set()
+    total_eleves = 0
+    
+    for attr in attributions:
+        effectif = Inscription.objects.filter(
+            id_classe=attr.id_classe,
+            id_annee=annee_active,
+            est_active=True
+        ).count()
+        total_eleves += effectif
+        
+        option_nom = attr.id_classe.id_option.nom_option if attr.id_classe.id_option else "Sans option"
+        
+        cours_data.append({
+            'cours_nom': attr.id_cours.nom_cours,
+            'cours_code': attr.id_cours.code_cours,
+            'coefficient': attr.id_cours.coefficient,
+            'classe_nom': attr.id_classe.nom_classe,
+            'classe_id': attr.id_classe.id,
+            'option_nom': option_nom,
+            'effectif': effectif
+        })
+        classes_set.add(attr.id_classe.nom_classe)
+    
+    titulaire = TitulaireClasse.objects.filter(
+        id_personnel=personnel,
+        id_annee=annee_active,
+        est_actif=True
+    ).select_related('id_classe').first()
+    
+    return JsonResponse({
+        'success': True,
+        'total_cours': len(cours_data),
+        'total_classes': len(classes_set),
+        'total_eleves': total_eleves,
+        'cours': cours_data,
+        'classes_enseignees': list(classes_set),
+        'titulaire': {
+            'est_titulaire': bool(titulaire),
+            'classe_nom': titulaire.id_classe.nom_classe if titulaire else None
+        }
+    })
+
+
+def mes_cours(request):
+    if not request.session.get('user_id'):
+        return redirect('login')
+    if request.session.get('user_role') != 'ENSEIGNANT':
+        messages.error(request, 'Accès non autorisé')
+        return redirect('login')
+    context = {'user_nom': request.session.get('user_nom'), 'page_title': 'Mes cours - CS KABA'}
+    return render(request, 'Cote/enseignant/mes_cours.html', context)
+
+
+def saisir_notes(request):
+    if not request.session.get('user_id'):
+        return redirect('login')
+    if request.session.get('user_role') != 'ENSEIGNANT':
+        messages.error(request, 'Accès non autorisé')
+        return redirect('login')
+    context = {'user_nom': request.session.get('user_nom'), 'page_title': 'Saisir notes - CS KABA'}
+    return render(request, 'Cote/enseignant/saisir_notes.html', context)
+
+
+def mon_profil(request):
+    if not request.session.get('user_id'):
+        return redirect('login')
+    if request.session.get('user_role') != 'ENSEIGNANT':
+        messages.error(request, 'Accès non autorisé')
+        return redirect('login')
+    context = {'user_nom': request.session.get('user_nom'), 'page_title': 'Mon profil - CS KABA'}
+    return render(request, 'Cote/enseignant/mon_profil.html', context)
+
+
+# =====================================================
+# NOUVELLES VUES POUR LA SAISIE DES COTES (AJAX)
+# =====================================================
+
+def saisir_cotes(request):
+    """Vue principale pour la saisie des cotes (enseignant connecté)."""
+    if not request.session.get('user_id'):
+        return redirect('login')
+    if request.session.get('user_role') != 'ENSEIGNANT':
+        messages.error(request, 'Accès non autorisé')
+        return redirect('dashboard')
+
+    context = {
+        'user_nom': request.session.get('user_nom'),
+        'page_title': 'Saisir cotes - CS KABA'
+    }
+    return render(request, 'Cote/enseignant/saisir_cotes.html', context)
+
+
+@require_http_methods(["GET"])
+def api_enseignant_annees(request):
+    """Retourne les années scolaires pour lesquelles l'enseignant a des attributions."""
+    user_id = request.session.get('user_id')
+    if not user_id:
+        return JsonResponse({'error': 'Non authentifié'}, status=401)
+    try:
+        personnel = Personnel.objects.get(id_utilisateur_id=user_id)
+    except Personnel.DoesNotExist:
+        return JsonResponse({'error': 'Personnel non trouvé'}, status=404)
+    
+    annees = AnneeScolaire.objects.filter(
+        attributioncours__id_personnel=personnel,
+        attributioncours__est_active=True
+    ).distinct().order_by('-date_debut')
+    
+    data = [{'id': a.id, 'annee_scolaire': a.annee_scolaire} for a in annees]
+    return JsonResponse({'annees': data})
+
+
+@require_http_methods(["GET"])
+def api_enseignant_classes(request):
+    user_id = request.session.get('user_id')
+    if not user_id:
+        return JsonResponse({'error': 'Non authentifié'}, status=401)
+    annee_id = request.GET.get('annee_id')
+    if not annee_id:
+        return JsonResponse({'error': 'annee_id requis'}, status=400)
+    
+    try:
+        personnel = Personnel.objects.get(id_utilisateur_id=user_id)
+    except Personnel.DoesNotExist:
+        return JsonResponse({'error': 'Personnel non trouvé'}, status=404)
+    
+    classes = Classe.objects.filter(
+        attributioncours__id_personnel=personnel,
+        attributioncours__id_annee_id=annee_id,
+        attributioncours__est_active=True
+    ).distinct().order_by('nom_classe')
+    
+    data = [{'id': c.id, 'nom_classe': c.nom_classe} for c in classes]
+    return JsonResponse({'classes': data})
+
+
+@require_http_methods(["GET"])
+def api_enseignant_cours(request):
+    user_id = request.session.get('user_id')
+    if not user_id:
+        return JsonResponse({'error': 'Non authentifié'}, status=401)
+    annee_id = request.GET.get('annee_id')
+    classe_id = request.GET.get('classe_id')
+    if not annee_id or not classe_id:
+        return JsonResponse({'error': 'annee_id et classe_id requis'}, status=400)
+    
+    try:
+        personnel = Personnel.objects.get(id_utilisateur_id=user_id)
+    except Personnel.DoesNotExist:
+        return JsonResponse({'error': 'Personnel non trouvé'}, status=404)
+    
+    cours = Cours.objects.filter(
+        attributioncours__id_personnel=personnel,
+        attributioncours__id_annee_id=annee_id,
+        attributioncours__id_classe_id=classe_id,
+        attributioncours__est_active=True
+    ).distinct()
+    
+    data = [{'id': c.id, 'nom_cours': c.nom_cours, 'coefficient': c.coefficient} for c in cours]
+    return JsonResponse({'cours': data})
+
+
+@require_http_methods(["GET"])
+def api_enseignant_eleves_cotes(request):
+    user_id = request.session.get('user_id')
+    if not user_id:
+        return JsonResponse({'error': 'Non authentifié'}, status=401)
+    annee_id = request.GET.get('annee_id')
+    classe_id = request.GET.get('classe_id')
+    cours_id = request.GET.get('cours_id')
+    if not all([annee_id, classe_id, cours_id]):
+        return JsonResponse({'error': 'Paramètres manquants'}, status=400)
+    
+    try:
+        personnel = Personnel.objects.get(id_utilisateur_id=user_id)
+    except Personnel.DoesNotExist:
+        return JsonResponse({'error': 'Personnel non trouvé'}, status=404)
+    
+    # Vérifier que l'enseignant a bien le droit d'accéder à ce cours dans cette classe
+    if not AttributionCours.objects.filter(
+        id_personnel=personnel,
+        id_annee_id=annee_id,
+        id_classe_id=classe_id,
+        id_cours_id=cours_id,
+        est_active=True
+    ).exists():
+        return JsonResponse({'error': 'Non autorisé'}, status=403)
+    
+    inscriptions = Inscription.objects.filter(
+        id_classe_id=classe_id,
+        id_annee_id=annee_id,
+        est_active=True
+    ).select_related('id_eleve__id_personne')
+    
+    eleves_data = []
+    for ins in inscriptions:
+        eleve = ins.id_eleve
+        cote = Cote.objects.filter(
+            eleve=eleve,
+            cours_id=cours_id,
+            annee_scolaire_id=annee_id,
+            classe_id=classe_id,
+            enseignant=personnel
+        ).first()
+        eleves_data.append({
+            'id': eleve.id,
+            'nom': eleve.id_personne.nom,
+            'prenom': eleve.id_personne.prenom,
+            'matricule': eleve.matricule,
+            'cote': {
+                'cote_p1': float(cote.cote_p1) if cote and cote.cote_p1 is not None else None,
+                'cote_p2': float(cote.cote_p2) if cote and cote.cote_p2 is not None else None,
+                'cote_p3': float(cote.cote_p3) if cote and cote.cote_p3 is not None else None,
+                'cote_p4': float(cote.cote_p4) if cote and cote.cote_p4 is not None else None,
+                'examen_semestre_1': float(cote.examen_semestre_1) if cote and cote.examen_semestre_1 is not None else None,
+                'examen_semestre_2': float(cote.examen_semestre_2) if cote and cote.examen_semestre_2 is not None else None,
+            } if cote else {}
+        })
+    return JsonResponse({'eleves': eleves_data})
+
+
+@csrf_exempt
+@require_http_methods(["POST"])
+def api_sauvegarder_cotes(request):
+    user_id = request.session.get('user_id')
+    if not user_id:
+        return JsonResponse({'success': False, 'error': 'Non authentifié'}, status=401)
+    
+    try:
+        personnel = Personnel.objects.get(id_utilisateur_id=user_id)
+    except Personnel.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Personnel non trouvé'}, status=404)
+    
+    data = json.loads(request.body)
+    annee_id = data.get('annee_id')
+    classe_id = data.get('classe_id')
+    cours_id = data.get('cours_id')
+    cotes_dict = data.get('cotes', {})
+    
+    # Vérification des droits
+    if not AttributionCours.objects.filter(
+        id_personnel=personnel,
+        id_annee_id=annee_id,
+        id_classe_id=classe_id,
+        id_cours_id=cours_id,
+        est_active=True
+    ).exists():
+        return JsonResponse({'success': False, 'error': 'Non autorisé'}, status=403)
+    
+    try:
+        with transaction.atomic():
+            for eleve_id_str, fields in cotes_dict.items():
+                eleve_id = int(eleve_id_str)
+                eleve = Eleve.objects.get(id=eleve_id)
+                Cote.objects.update_or_create(
+                    eleve=eleve,
+                    cours_id=cours_id,
+                    annee_scolaire_id=annee_id,
+                    classe_id=classe_id,
+                    enseignant=personnel,
+                    defaults={
+                        'cote_p1': fields.get('p1'),
+                        'cote_p2': fields.get('p2'),
+                        'cote_p3': fields.get('p3'),
+                        'cote_p4': fields.get('p4'),
+                        'examen_semestre_1': fields.get('examen1'),
+                        'examen_semestre_2': fields.get('examen2'),
+                    }
+                )
+        return JsonResponse({'success': True})
+    except Exception as e:
+        return JsonResponse({'success': False, 'error': str(e)})
+
+
+# =====================================================
+# BULLETIN ÉLÈVE
+# =====================================================
+
+def bulletin_eleve(request, eleve_id, annee_id=None):
+    """
+    Affiche le bulletin d'un élève pour une année scolaire donnée.
+    Si annee_id est None, utilise l'année active.
+    """
+    eleve = get_object_or_404(Eleve, id=eleve_id, est_actif=True)
+    
+    if annee_id:
+        annee = get_object_or_404(AnneeScolaire, id=annee_id)
+    else:
+        annee = AnneeScolaire.objects.filter(est_active=True).first()
+        if not annee:
+            annee = AnneeScolaire.objects.order_by('-date_debut').first()
+    
+    inscription = get_object_or_404(Inscription, id_eleve=eleve, id_annee=annee, est_active=True)
+    classe = inscription.id_classe
+    
+    cours_attribues = AttributionCours.objects.filter(
+        id_classe=classe,
+        id_annee=annee,
+        est_active=True
+    ).select_related('id_cours').order_by('id_cours__nom_cours')
+    
+    cours_list = [att.id_cours for att in cours_attribues]
+    
+    bulletin_data = []
+    total_general_eleve = 0
+    nombre_cours_avec_notes = 0
+    
+    for cours in cours_list:
+        cote = Cote.objects.filter(
+            eleve=eleve,
+            cours=cours,
+            annee_scolaire=annee,
+            classe=classe
+        ).first()
+        
+        p1 = cote.cote_p1 if cote and cote.cote_p1 is not None else None
+        p2 = cote.cote_p2 if cote and cote.cote_p2 is not None else None
+        ex1 = cote.examen_semestre_1 if cote and cote.examen_semestre_1 is not None else None
+        tot1 = cote.total_semestre_1 if cote and cote.total_semestre_1 is not None else None
+        p3 = cote.cote_p3 if cote and cote.cote_p3 is not None else None
+        p4 = cote.cote_p4 if cote and cote.cote_p4 is not None else None
+        ex2 = cote.examen_semestre_2 if cote and cote.examen_semestre_2 is not None else None
+        tot2 = cote.total_semestre_2 if cote and cote.total_semestre_2 is not None else None
+        total_general = cote.total_general if cote and cote.total_general is not None else None
+        
+        if total_general is not None:
+            total_general_eleve += total_general
+            nombre_cours_avec_notes += 1
+        
+        bulletin_data.append({
+            'cours': cours,
+            'p1': p1, 'p2': p2, 'ex1': ex1, 'tot1': tot1,
+            'p3': p3, 'p4': p4, 'ex2': ex2, 'tot2': tot2,
+            'total_general': total_general,
+        })
+    
+    max_possible_total = len(cours_list) * 120
+    pourcentage_general = (total_general_eleve / max_possible_total * 100) if max_possible_total > 0 else 0
+    
+    rang = None  # À implémenter selon besoin
+    
+    context = {
+        'eleve': eleve,
+        'personne': eleve.id_personne,
+        'classe': classe,
+        'annee': annee,
+        'bulletin_data': bulletin_data,
+        'total_general_eleve': total_general_eleve,
+        'pourcentage_general': round(pourcentage_general, 2),
+        'rang': rang,
+        'nombre_eleves_classe': Inscription.objects.filter(id_classe=classe, id_annee=annee, est_active=True).count(),
+        'page_title': f'Bulletin de {eleve.id_personne.nom} {eleve.id_personne.prenom}',
+    }
+    return render(request, 'Cote/bulletin.html', context)  mon view complet est la voici mon model # Cote/models.py
+
+from django.db import models
+from django.contrib.auth.hashers import make_password, check_password
+from django.core.exceptions import ValidationError
+from datetime import datetime
+
+# =====================================================
+# 1. TABLE OPTION_ETUDE
+# =====================================================
+class OptionEtude(models.Model):
+    nom_option = models.CharField(max_length=100, verbose_name="Nom de l'option")
+    code_option = models.CharField(max_length=10, unique=True, verbose_name="Code option")
+    actif = models.BooleanField(default=True, verbose_name="Actif")
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="Date de création")
+
+    class Meta:
+        verbose_name = "Option d'étude"
+        verbose_name_plural = "Options d'étude"
+        ordering = ['nom_option']
+
+    def __str__(self):
+        return f"{self.nom_option} ({self.code_option})"
+
+
+# =====================================================
+# 2. TABLE CLASSE
+# =====================================================
+class Classe(models.Model):
+    nom_classe = models.CharField(max_length=50, verbose_name="Nom de la classe")
+    niveau = models.CharField(max_length=20, blank=True, null=True, verbose_name="Niveau")
+    id_option = models.ForeignKey(OptionEtude, on_delete=models.SET_NULL, null=True, blank=True, verbose_name="Option")
+    est_cycle_orientation = models.BooleanField(default=False, verbose_name="Est cycle d'orientation")
+    capacite_max = models.IntegerField(default=30, verbose_name="Capacité maximale")
+    actif = models.BooleanField(default=True, verbose_name="Actif")
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="Date de création")
+
+    class Meta:
+        verbose_name = "Classe"
+        verbose_name_plural = "Classes"
+        ordering = ['niveau', 'nom_classe']
+        unique_together = ['nom_classe', 'id_option']
+
+    def __str__(self):
+        if self.est_cycle_orientation:
+            return f"{self.nom_classe} (CO)"
+        return f"{self.nom_classe} - {self.id_option.nom_option if self.id_option else 'Sans option'}"
+
+
+# =====================================================
+# 3. TABLE ANNEE_SCOLAIRE
+# =====================================================
+class AnneeScolaire(models.Model):
+    annee_scolaire = models.CharField(max_length=20, unique=True, verbose_name="Année scolaire")
+    est_active = models.BooleanField(default=False, verbose_name="Année active")
+    date_debut = models.DateField(verbose_name="Date début")
+    date_fin = models.DateField(verbose_name="Date fin")
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="Date de création")
+
+    class Meta:
+        verbose_name = "Année scolaire"
+        verbose_name_plural = "Années scolaires"
+        ordering = ['-id']
+
+    def __str__(self):
+        return self.annee_scolaire
+
+    def save(self, *args, **kwargs):
+        if self.est_active:
+            AnneeScolaire.objects.filter(est_active=True).update(est_active=False)
+        super().save(*args, **kwargs)
+
+
+# =====================================================
+# 4. TABLE PERSONNE
+# =====================================================
+class Personne(models.Model):
+    SEXE_CHOICES = [('M', 'Masculin'), ('F', 'Féminin')]
+    
+    nom = models.CharField(max_length=100, verbose_name="Nom")
+    postnom = models.CharField(max_length=100, blank=True, null=True, verbose_name="Postnom")
+    prenom = models.CharField(max_length=100, verbose_name="Prénom")
+    lieu_naissance = models.CharField(max_length=100, blank=True, null=True, verbose_name="Lieu de naissance")
+    date_naissance = models.DateField(blank=True, null=True, verbose_name="Date de naissance")
+    sexe = models.CharField(max_length=1, choices=SEXE_CHOICES, blank=True, null=True, verbose_name="Sexe")
+    adresse = models.TextField(blank=True, null=True, verbose_name="Adresse")
+    telephone = models.CharField(max_length=20, blank=True, null=True, verbose_name="Téléphone")
+    email = models.EmailField(max_length=255, blank=True, null=True, verbose_name="Email")
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="Date de création")
+
+    class Meta:
+        verbose_name = "Personne"
+        verbose_name_plural = "Personnes"
+        ordering = ['nom', 'prenom']
+
+    def __str__(self):
+        return f"{self.nom} {self.prenom}"
+
+
+# =====================================================
+# 5. TABLE UTILISATEUR
+# =====================================================
+class Utilisateur(models.Model):
+    ROLE_CHOICES = [('DE', 'Directeur des Études'), ('ENSEIGNANT', 'Enseignant'), ('TITULAIRE', 'Titulaire')]
+    
+    id_personne = models.OneToOneField(Personne, on_delete=models.CASCADE, verbose_name="Personne")
+    email = models.EmailField(max_length=255, unique=True, verbose_name="Email")
+    password_hash = models.CharField(max_length=255, verbose_name="Mot de passe hashé")
+    role = models.CharField(max_length=20, choices=ROLE_CHOICES, verbose_name="Rôle")
+    est_actif = models.BooleanField(default=True, verbose_name="Est actif")
+    est_principal = models.BooleanField(default=False, verbose_name="Est principal")
+    dernier_connexion = models.DateTimeField(blank=True, null=True, verbose_name="Dernière connexion")
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="Date de création")
+
+    class Meta:
+        verbose_name = "Utilisateur"
+        verbose_name_plural = "Utilisateurs"
+
+    def __str__(self):
+        return f"{self.email} - {self.get_role_display()}"
+
+    def set_password(self, raw_password):
+        self.password_hash = make_password(raw_password)
+
+    def check_password(self, raw_password):
+        return check_password(raw_password, self.password_hash)
+
+
+# =====================================================
+# 6. TABLE PERSONNEL
+# =====================================================
+class Personnel(models.Model):
+    id_utilisateur = models.OneToOneField(Utilisateur, on_delete=models.CASCADE, verbose_name="Utilisateur")
+    date_embauche = models.DateField(blank=True, null=True, verbose_name="Date d'embauche")
+    specialite = models.CharField(max_length=100, blank=True, null=True, verbose_name="Spécialité")
+    est_titulaire = models.BooleanField(default=False, verbose_name="Est titulaire")
+
+    class Meta:
+        verbose_name = "Personnel"
+        verbose_name_plural = "Personnels"
+
+    def __str__(self):
+        return f"{self.id_utilisateur.id_personne.nom} {self.id_utilisateur.id_personne.prenom}"
+
+
+# =====================================================
+# 7. TABLE ELEVE (avec photo)
+# =====================================================
+class Eleve(models.Model):
+    id_personne = models.OneToOneField(Personne, on_delete=models.CASCADE, verbose_name="Personne")
+    matricule = models.CharField(max_length=50, unique=True, verbose_name="Matricule")
+    telephone_parent = models.CharField(max_length=20, blank=True, null=True, verbose_name="Téléphone parent")
+    email_parent = models.EmailField(max_length=255, blank=True, null=True, verbose_name="Email parent")
+    photo = models.ImageField(upload_to='photos/eleves/', blank=True, null=True, verbose_name="Photo de l'élève")
+    est_actif = models.BooleanField(default=True, verbose_name="Est actif")
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="Date de création")
+
+    class Meta:
+        verbose_name = "Élève"
+        verbose_name_plural = "Élèves"
+        ordering = ['id_personne__nom', 'id_personne__prenom']
+
+    def __str__(self):
+        return f"{self.matricule} - {self.id_personne.nom} {self.id_personne.prenom}"
+
+
+# =====================================================
+# 8. TABLE INSCRIPTION
+# =====================================================
+class Inscription(models.Model):
+    TYPE_CHOICES = [('NOUVEAU', 'Nouveau'), ('REINSCRIPTION', 'Réinscription')]
+    
+    id_eleve = models.ForeignKey(Eleve, on_delete=models.CASCADE, verbose_name="Élève")
+    id_classe = models.ForeignKey(Classe, on_delete=models.CASCADE, verbose_name="Classe")
+    id_annee = models.ForeignKey(AnneeScolaire, on_delete=models.CASCADE, verbose_name="Année scolaire")
+    type_inscription = models.CharField(max_length=20, choices=TYPE_CHOICES, verbose_name="Type d'inscription")
+    date_inscription = models.DateTimeField(auto_now_add=True, verbose_name="Date d'inscription")
+    est_active = models.BooleanField(default=True, verbose_name="Est active")
+    created_by = models.ForeignKey(Utilisateur, on_delete=models.SET_NULL, null=True, blank=True, verbose_name="Créé par")
+
+    class Meta:
+        verbose_name = "Inscription"
+        verbose_name_plural = "Inscriptions"
+        unique_together = ['id_eleve', 'id_annee']
+
+    def __str__(self):
+        return f"{self.id_eleve} - {self.id_annee.annee_scolaire}"
+
+
+# =====================================================
+# 9. TABLE COURS
+# =====================================================
+class Cours(models.Model):
+    nom_cours = models.CharField(max_length=100, verbose_name="Nom du cours")
+    code_cours = models.CharField(max_length=20, unique=True, verbose_name="Code cours")
+    coefficient = models.IntegerField(default=1, verbose_name="Coefficient")
+    description = models.TextField(blank=True, null=True, verbose_name="Description")
+    id_option = models.ForeignKey(OptionEtude, on_delete=models.SET_NULL, null=True, blank=True, verbose_name="Option")
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="Date de création")
+    created_by = models.ForeignKey(Utilisateur, on_delete=models.SET_NULL, null=True, blank=True, verbose_name="Créé par")
+
+    class Meta:
+        verbose_name = "Cours"
+        verbose_name_plural = "Cours"
+        ordering = ['nom_cours']
+
+    def __str__(self):
+        return f"{self.nom_cours} (Coeff: {self.coefficient})"
+
+
+# =====================================================
+# 10. TABLE ATTRIBUTION_COURS (avec double contrainte)
+# =====================================================
+class AttributionCours(models.Model):
+    id_personnel = models.ForeignKey(Personnel, on_delete=models.CASCADE, verbose_name="Personnel")
+    id_cours = models.ForeignKey(Cours, on_delete=models.CASCADE, verbose_name="Cours")
+    id_classe = models.ForeignKey(Classe, on_delete=models.CASCADE, verbose_name="Classe")
+    id_annee = models.ForeignKey(AnneeScolaire, on_delete=models.CASCADE, verbose_name="Année scolaire")
+    date_attribution = models.DateField(auto_now_add=True, verbose_name="Date d'attribution")
+    est_active = models.BooleanField(default=True, verbose_name="Est active")
+
+    class Meta:
+        verbose_name = "Attribution de cours"
+        verbose_name_plural = "Attributions de cours"
+        unique_together = [
+            ['id_personnel', 'id_cours', 'id_classe', 'id_annee'],   # Un enseignant ne peut pas avoir deux fois le même cours dans la même classe/année
+            ['id_cours', 'id_classe', 'id_annee'],                   # Un cours ne peut être attribué qu’une seule fois à une classe (quel que soit l’enseignant)
+        ]
+
+    def __str__(self):
+        return f"{self.id_cours.nom_cours} - {self.id_classe} - {self.id_annee.annee_scolaire}"
+
+
+# =====================================================
+# 11. TABLE TITULAIRE_CLASSE
+# =====================================================
+class TitulaireClasse(models.Model):
+    id_personnel = models.ForeignKey(Personnel, on_delete=models.CASCADE, verbose_name="Personnel")
+    id_classe = models.ForeignKey(Classe, on_delete=models.CASCADE, verbose_name="Classe")
+    id_annee = models.ForeignKey(AnneeScolaire, on_delete=models.CASCADE, verbose_name="Année scolaire")
+    date_nomination = models.DateField(auto_now_add=True, verbose_name="Date de nomination")
+    est_actif = models.BooleanField(default=True, verbose_name="Est actif")
+
+    class Meta:
+        verbose_name = "Titulaire de classe"
+        verbose_name_plural = "Titulaires de classe"
+        unique_together = ['id_classe', 'id_annee']
+
+    def __str__(self):
+        return f"Titulaire: {self.id_classe} - {self.id_annee.annee_scolaire}"
+
+
+# =====================================================
+# 12. TABLE PERIODE
+# =====================================================
+class Periode(models.Model):
+    nom_periode = models.CharField(max_length=20, verbose_name="Nom de la période")
+    numero_periode = models.SmallIntegerField(verbose_name="Numéro période", choices=[(1, '1ère Période'), (2, '2ème Période')])
+    date_debut = models.DateField(blank=True, null=True, verbose_name="Date début")
+    date_fin = models.DateField(blank=True, null=True, verbose_name="Date fin")
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="Date de création")
+
+    class Meta:
+        verbose_name = "Période"
+        verbose_name_plural = "Périodes"
+
+    def __str__(self):
+        return self.nom_periode
+
+
+# =====================================================
+# 13. TABLE SEMESTRE
+# =====================================================
+class Semestre(models.Model):
+    nom_semestre = models.CharField(max_length=20, verbose_name="Nom du semestre")
+    numero_semestre = models.SmallIntegerField(verbose_name="Numéro semestre", choices=[(1, '1er Semestre'), (2, '2ème Semestre')])
+    date_debut = models.DateField(blank=True, null=True, verbose_name="Date début")
+    date_fin = models.DateField(blank=True, null=True, verbose_name="Date fin")
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="Date de création")
+
+    class Meta:
+        verbose_name = "Semestre"
+        verbose_name_plural = "Semestres"
+
+    def __str__(self):
+        return self.nom_semestre
+
+
+# =====================================================
+# 14. TABLE NOTE
+# =====================================================
+class Note(models.Model):
+    id_eleve = models.ForeignKey(Eleve, on_delete=models.CASCADE, verbose_name="Élève")
+    id_cours = models.ForeignKey(Cours, on_delete=models.CASCADE, verbose_name="Cours")
+    id_classe = models.ForeignKey(Classe, on_delete=models.CASCADE, verbose_name="Classe")
+    id_annee = models.ForeignKey(AnneeScolaire, on_delete=models.CASCADE, verbose_name="Année scolaire")
+    id_periode = models.ForeignKey(Periode, on_delete=models.CASCADE, verbose_name="Période")
+    note = models.DecimalField(max_digits=5, decimal_places=2, verbose_name="Note", help_text="Note entre 0 et 20")
+    date_saisie = models.DateTimeField(auto_now_add=True, verbose_name="Date de saisie")
+    id_personnel = models.ForeignKey(Personnel, on_delete=models.CASCADE, verbose_name="Enseignant")
+    est_validee = models.BooleanField(default=False, verbose_name="Est validée")
+    commentaire = models.TextField(blank=True, null=True, verbose_name="Commentaire")
+
+    class Meta:
+        verbose_name = "Note"
+        verbose_name_plural = "Notes"
+        unique_together = ['id_eleve', 'id_cours', 'id_annee', 'id_periode']
+
+    def clean(self):
+        if self.note < 0 or self.note > 20:
+            raise ValidationError("La note doit être comprise entre 0 et 20")
+
+    def __str__(self):
+        return f"{self.id_eleve} - {self.id_cours.nom_cours}: {self.note}"
+
+
+# =====================================================
+# 15. TABLE BULLETIN
+# =====================================================
+class Bulletin(models.Model):
+    id_eleve = models.ForeignKey(Eleve, on_delete=models.CASCADE, verbose_name="Élève")
+    id_classe = models.ForeignKey(Classe, on_delete=models.CASCADE, verbose_name="Classe")
+    id_annee = models.ForeignKey(AnneeScolaire, on_delete=models.CASCADE, verbose_name="Année scolaire")
+    id_semestre = models.ForeignKey(Semestre, on_delete=models.CASCADE, verbose_name="Semestre")
+    moyenne_periode1 = models.DecimalField(max_digits=5, decimal_places=2, blank=True, null=True, verbose_name="Moyenne 1ère période")
+    moyenne_periode2 = models.DecimalField(max_digits=5, decimal_places=2, blank=True, null=True, verbose_name="Moyenne 2ème période")
+    moyenne_semestrielle = models.DecimalField(max_digits=5, decimal_places=2, blank=True, null=True, verbose_name="Moyenne semestrielle")
+    rang_classe = models.IntegerField(blank=True, null=True, verbose_name="Rang dans la classe")
+    appreciation = models.TextField(blank=True, null=True, verbose_name="Appréciation")
+    date_generation = models.DateTimeField(auto_now_add=True, verbose_name="Date de génération")
+    pdf_path = models.CharField(max_length=500, blank=True, null=True, verbose_name="Chemin du PDF")
+    generated_by = models.ForeignKey(Utilisateur, on_delete=models.SET_NULL, null=True, blank=True, verbose_name="Généré par")
+
+    class Meta:
+        verbose_name = "Bulletin"
+        verbose_name_plural = "Bulletins"
+
+    def __str__(self):
+        return f"Bulletin {self.id_eleve} - {self.id_annee.annee_scolaire}"
+
+
+# =====================================================
+# 16. TABLE PALMARES
+# =====================================================
+class Palmares(models.Model):
+    MENTION_CHOICES = [
+        ('EXCELLENT', 'Excellent'), ('TRES BIEN', 'Très Bien'),
+        ('BIEN', 'Bien'), ('ASSEZ BIEN', 'Assez Bien'), ('PASSABLE', 'Passable')
+    ]
+    id_annee = models.ForeignKey(AnneeScolaire, on_delete=models.CASCADE, verbose_name="Année scolaire")
+    id_classe = models.ForeignKey(Classe, on_delete=models.CASCADE, verbose_name="Classe")
+    id_eleve = models.ForeignKey(Eleve, on_delete=models.CASCADE, verbose_name="Élève")
+    rang = models.IntegerField(verbose_name="Rang")
+    mention = models.CharField(max_length=20, choices=MENTION_CHOICES, verbose_name="Mention")
+    created_at = models.DateTimeField(auto_now_add=True, verbose_name="Date de création")
+
+    class Meta:
+        verbose_name = "Palmarès"
+        verbose_name_plural = "Palmarès"
+
+    def __str__(self):
+        return f"{self.id_annee.annee_scolaire} - {self.id_classe} - Rang {self.rang}"
+
+
+# =====================================================
+# 17. TABLE COTE (NOUVEAU) - pour la saisie complète selon bulletin congolais
+# =====================================================
+class Cote(models.Model):
+    """
+    Enregistrement complet des cotes d'un élève pour un cours sur une année scolaire.
+    Contient les notes des deux semestres et les totaux calculés.
+    """
+    eleve = models.ForeignKey(Eleve, on_delete=models.CASCADE, verbose_name="Élève")
+    cours = models.ForeignKey(Cours, on_delete=models.CASCADE, verbose_name="Cours")
+    enseignant = models.ForeignKey(Personnel, on_delete=models.CASCADE, verbose_name="Enseignant")
+    annee_scolaire = models.ForeignKey(AnneeScolaire, on_delete=models.CASCADE, verbose_name="Année scolaire")
+    classe = models.ForeignKey(Classe, on_delete=models.CASCADE, verbose_name="Classe")
+
+    # Cotes du premier semestre (périodes 1 et 2 + examen)
+    cote_p1 = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True, verbose_name="Cote P1")
+    cote_p2 = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True, verbose_name="Cote P2")
+    examen_semestre_1 = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True, verbose_name="Examen S1")
+
+    # Cotes du second semestre (périodes 3 et 4 + examen)
+    cote_p3 = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True, verbose_name="Cote P3")
+    cote_p4 = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True, verbose_name="Cote P4")
+    examen_semestre_2 = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True, verbose_name="Examen S2")
+
+    # Champs calculés automatiquement
+    total_semestre_1 = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True, verbose_name="Total S1")
+    total_semestre_2 = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True, verbose_name="Total S2")
+    total_general = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True, verbose_name="Total général")
+    pourcentage = models.DecimalField(max_digits=5, decimal_places=2, null=True, blank=True, verbose_name="Pourcentage")
+    observation = models.CharField(max_length=20, null=True, blank=True, verbose_name="Observation")  # Réussi / Échec
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name = "Cote"
+        verbose_name_plural = "Cotes"
+        unique_together = [['eleve', 'cours', 'annee_scolaire', 'classe']]
+
+    def __str__(self):
+        return f"{self.eleve} - {self.cours.nom_cours} ({self.annee_scolaire})"
+
+    def clean(self):
+        """Validation : chaque note doit être entre 0 et 20."""
+        for field in ['cote_p1', 'cote_p2', 'cote_p3', 'cote_p4', 'examen_semestre_1', 'examen_semestre_2']:
+            value = getattr(self, field)
+            if value is not None and (value < 0 or value > 20):
+                raise ValidationError(f"{field} doit être comprise entre 0 et 20.")
+
+    def save(self, *args, **kwargs):
+        # Calculs automatiques avant sauvegarde
+        if self.cote_p1 is not None and self.cote_p2 is not None and self.examen_semestre_1 is not None:
+            self.total_semestre_1 = self.cote_p1 + self.cote_p2 + self.examen_semestre_1
+        else:
+            self.total_semestre_1 = None
+
+        if self.cote_p3 is not None and self.cote_p4 is not None and self.examen_semestre_2 is not None:
+            self.total_semestre_2 = self.cote_p3 + self.cote_p4 + self.examen_semestre_2
+        else:
+            self.total_semestre_2 = None
+
+        if self.total_semestre_1 is not None and self.total_semestre_2 is not None:
+            self.total_general = self.total_semestre_1 + self.total_semestre_2
+            # Pourcentage sur base de 80 (max possible : 20+20+20 =60 par semestre, total 120)
+            max_possible = 120
+            self.pourcentage = (self.total_general / max_possible) * 100
+            self.observation = "Réussi" if self.pourcentage >= 50 else "Échec"
+        else:
+            self.total_general = None
+            self.pourcentage = None
+            self.observation = None
+
+        super().save(*args, **kwargs)
+
+
+# =====================================================
+# 18. TABLE ARCHIVAGE
+# =====================================================
+class Archivage(models.Model):
+    table_source = models.CharField(max_length=50, verbose_name="Table source")
+    record_id = models.IntegerField(verbose_name="ID de l'enregistrement")
+    data = models.JSONField(verbose_name="Données archivées")
+    date_archivage = models.DateTimeField(auto_now_add=True, verbose_name="Date d'archivage")
+    archived_by = models.ForeignKey(Utilisateur, on_delete=models.SET_NULL, null=True, blank=True, verbose_name="Archivé par")
+    raison = models.CharField(max_length=255, blank=True, null=True, verbose_name="Raison de l'archivage")
+
+    class Meta:
+        verbose_name = "Archivage"
+        verbose_name_plural = "Archivages"
+
+    def __str__(self):
+        return f"{self.table_source} - ID: {self.record_id} - {self.date_archivage}"et url est la # Cote/urls.py
+from django.urls import path
+from . import views
+
+urlpatterns = [
+    # Pages publiques
+    path('', views.index, name='index'),
+    path('login/', views.login_view, name='login'),
+    path('logout/', views.logout_view, name='logout'),
+    path('register-admin/', views.register_admin, name='register_admin'),
+    
+    # Tableaux de bord
+    path('dashboard/', views.dashboard, name='dashboard'),
+    path('dashboard-de/', views.dashboard_de, name='dashboard_de'),
+    path('dashboard-enseignant/', views.dashboard_enseignant, name='dashboard_enseignant'),
+    path('dashboard-titulaire/', views.dashboard_titulaire, name='dashboard_titulaire'),
+    
+    # Pages HTML (gestion)
+    path('gestion/enseignants/ajouter/', views.ajouter_enseignant_page, name='ajouter_enseignant_page'),
+    path('gestion/eleves/ajouter/', views.ajouter_eleve_page, name='ajouter_eleve_page'),
+    path('gestion/eleves/liste/', views.liste_eleves, name='liste_eleves'),
+    path('gestion/eleves/detail/<int:eleve_id>/', views.detail_eleve, name='detail_eleve'),
+    path('gestion/eleves/modifier/<int:eleve_id>/', views.modifier_eleve_page, name='modifier_eleve_page'),
+    path('gestion/eleves/recu/<int:eleve_id>/', views.generer_recu_inscription, name='recu_inscription'),
+    path('gestion/annee-scolaire/', views.annee_scolaire_page, name='annee_scolaire_page'),
+    path('gestion/classes-options/', views.gestion_cls_option_page, name='gestion_cls_option_page'),
+    path('gestion/cours/', views.cours_de_page, name='cours_de'),
+    
+    # API : Enseignants
+    path('api/enseignants/ajouter/', views.ajouter_enseignant, name='ajouter_enseignant'),
+    
+    # API : Élèves
+    path('api/eleves/ajouter/', views.ajouter_eleve, name='ajouter_eleve'),
+    path('api/eleves/modifier/<int:eleve_id>/', views.modifier_eleve, name='modifier_eleve'),
+    
+    # API : Années scolaires
+    path('api/annee/definir/', views.definir_annee, name='definir_annee'),
+    path('api/annee/ajouter/', views.ajouter_annee, name='ajouter_annee'),
+    path('api/annee/<int:id>/get/', views.get_annee, name='get_annee'),
+    path('api/annee/<int:id>/activer/', views.activer_annee, name='activer_annee'),
+    path('api/annee/<int:id>/desactiver/', views.desactiver_annee, name='desactiver_annee'),
+    path('api/annee/<int:id>/supprimer/', views.supprimer_annee, name='supprimer_annee'),
+    path('api/annee/<int:id>/stats/', views.get_annee_stats, name='get_annee_stats'),
+    path('api/annee/<int:id>/print/', views.print_annee_report, name='print_annee_report'),
+    
+    # API : Classes
+    path('api/classe/ajouter/', views.ajouter_classe, name='ajouter_classe'),
+    path('api/classe/<int:id>/get/', views.get_classe, name='get_classe'),
+    path('api/classe/<int:id>/toggle/', views.toggle_classe, name='toggle_classe'),
+    path('api/classe/<int:id>/supprimer/', views.supprimer_classe, name='supprimer_classe'),
+    
+    # API : Options
+    path('api/option/ajouter/', views.ajouter_option, name='ajouter_option'),
+    path('api/option/<int:id>/get/', views.get_option, name='get_option'),
+    path('api/option/<int:id>/toggle/', views.toggle_option, name='toggle_option'),
+    path('api/option/<int:id>/supprimer/', views.supprimer_option, name='supprimer_option'),
+    
+    # API : Cours
+    path('api/cours/ajouter/', views.ajouter_cours, name='ajouter_cours'),
+    path('api/cours/<int:id>/get/', views.get_cours, name='get_cours'),
+    path('api/cours/<int:id>/modifier/', views.modifier_cours, name='modifier_cours'),
+    path('api/cours/<int:id>/supprimer/', views.supprimer_cours, name='supprimer_cours'),
+    path('api/cours/par-option/', views.get_cours_par_option, name='cours_par_option'),
+    
+    # API : Attributions
+    path('api/attributions/ajouter/', views.attribuer_cours, name='attribuer_cours'),
+    path('api/attributions/classe/', views.get_attributions_classe, name='attributions_classe'),
+    path('api/attributions/<int:attribution_id>/supprimer/', views.supprimer_attribution, name='supprimer_attribution'),
+    
+    # API : Titulaires
+    path('api/titulaire/definir/', views.definir_titulaire, name='definir_titulaire'),
+    path('api/titulaire/get/', views.get_titulaire, name='get_titulaire'),
+    path('api/titulaire/<int:titulaire_id>/supprimer/', views.supprimer_titulaire_par_id, name='supprimer_titulaire_par_id'),
+    
+    # API : Statistiques, palmarès, exports
+    path('api/stats/data/', views.stats_data, name='stats_data'),
+    path('api/palmares/generer/', views.generer_palmares, name='generer_palmares'),
+    path('api/archives/export-pdf/', views.export_pdf, name='export_pdf'),
+    path('api/archives/export-excel/', views.export_excel, name='export_excel'),
+    path('api/classes/filter/', views.filtrer_classes_par_cycle, name='filtrer_classes'),
+    
+    # API Enseignant (saisie cotes, etc.)
+    path('api/enseignant/annees/', views.api_enseignant_annees, name='api_enseignant_annees'),
+    path('api/enseignant/classes/', views.api_enseignant_classes, name='api_enseignant_classes'),
+    path('api/enseignant/cours/', views.api_enseignant_cours, name='api_enseignant_cours'),
+    path('api/enseignant/eleves-cotes/', views.api_enseignant_eleves_cotes, name='api_enseignant_eleves_cotes'),
+    path('api/enseignant/sauvegarder-cotes/', views.api_sauvegarder_cotes, name='api_sauvegarder_cotes'),
+    path('api/enseignant/data/', views.get_enseignant_data, name='get_enseignant_data'),
+    
+    # Pages enseignant
+    path('mes-cours/', views.mes_cours, name='mes_cours'),
+    path('saisir-cotes/', views.saisir_cotes, name='saisir_cotes'),
+    path('mon-profil/', views.mon_profil, name='mon_profil'),
+    
+    # Bulletins
+    path('bulletin/<int:eleve_id>/', views.bulletin_eleve, name='bulletin_eleve'),
+    path('bulletin/<int:eleve_id>/annee/<int:annee_id>/', views.bulletin_eleve, name='bulletin_eleve_annee'),
+]   voici mon fichier html de saisir_cotes.html {% extends "Cote/enseignant/includes/head.html" %}
+{% load static %}
+
+{% block title %}Saisir cotes | CS KABA{% endblock %}
+
+{% block extra_css %}
+<style>
+    /* ========== DESIGN PREMIUM ========== */
+    :root {
+        --primary: #1e3c72;
+        --primary-dark: #0f2b4f;
+        --primary-light: #3b6cb0;
+        --success: #28a745;
+        --danger: #dc3545;
+        --warning: #ffc107;
+        --info: #17a2b8;
+        --gray-100: #f8f9fa;
+        --gray-200: #e9ecef;
+        --gray-300: #dee2e6;
+        --gray-600: #6c757d;
+        --gray-800: #343a40;
+    }
+
+    .loading-spinner {
+        display: inline-block;
+        width: 1rem;
+        height: 1rem;
+        border: 2px solid rgba(0,0,0,0.1);
+        border-top-color: var(--primary);
+        border-radius: 50%;
+        animation: spin 0.6s linear infinite;
+        margin-left: 8px;
+        vertical-align: middle;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .saving-spinner {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.6);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 9999;
+        visibility: hidden;
+        backdrop-filter: blur(4px);
+    }
+    .saving-spinner .spinner-box {
+        background: white;
+        padding: 25px 40px;
+        border-radius: 16px;
+        box-shadow: 0 20px 35px rgba(0,0,0,0.2);
+        text-align: center;
+    }
+
+    .card-filter {
+        border: none;
+        border-radius: 20px;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+        transition: transform 0.2s;
+    }
+    .card-filter:hover {
+        transform: translateY(-2px);
+    }
+
+    .btn-primary {
+        background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+        border: none;
+        border-radius: 12px;
+        padding: 10px 24px;
+        font-weight: 500;
+        transition: all 0.3s;
+    }
+    .btn-primary:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 5px 15px rgba(30,60,114,0.3);
+    }
+
+    .btn-success {
+        background: linear-gradient(135deg, #28a745 0%, #1e7e34 100%);
+        border: none;
+        border-radius: 12px;
+        padding: 12px 32px;
+        font-weight: 600;
+    }
+
+    .table-cotes {
+        border-radius: 16px;
+        overflow: hidden;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+    }
+    .table-cotes th {
+        background-color: var(--gray-100);
+        color: var(--gray-800);
+        font-weight: 600;
+        border-bottom: 2px solid var(--gray-300);
+    }
+    .table-cotes td {
+        vertical-align: middle;
+        background-color: white;
+    }
+    .table-cotes input {
+        background: var(--gray-100);
+        border: 1px solid var(--gray-300);
+        border-radius: 8px;
+        padding: 6px 10px;
+        transition: all 0.2s;
+        width: 100%;
+    }
+    .table-cotes input:focus {
+        background: white;
+        border-color: var(--primary);
+        box-shadow: 0 0 0 0.2rem rgba(30,60,114,0.25);
+        outline: none;
+    }
+    .btn-bulletin {
+        background: var(--info);
+        color: white;
+        border-radius: 20px;
+        padding: 4px 12px;
+        font-size: 12px;
+        transition: all 0.2s;
+        text-decoration: none;
+        display: inline-block;
+    }
+    .btn-bulletin:hover {
+        background: #138496;
+        transform: scale(1.02);
+        color: white;
+    }
+
+    .alert-fixed {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        z-index: 1060;
+        min-width: 280px;
+        max-width: 400px;
+        border-radius: 12px;
+        box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+        animation: slideInRight 0.3s ease-out;
+    }
+    @keyframes slideInRight {
+        from { transform: translateX(100%); opacity: 0; }
+        to { transform: translateX(0); opacity: 1; }
+    }
+
+    .form-select, .form-control {
+        border-radius: 12px;
+        border: 1px solid var(--gray-300);
+        padding: 10px 15px;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 40px;
+        background: var(--gray-100);
+        border-radius: 20px;
+        margin-top: 20px;
+    }
+
+    /* Responsive */
+    @media (max-width: 768px) {
+        .table-cotes th, .table-cotes td {
+            font-size: 12px;
+            padding: 8px 4px;
+        }
+        .btn-bulletin {
+            font-size: 10px;
+            padding: 2px 8px;
+        }
+        .btn-primary, .btn-success {
+            padding: 6px 12px;
+            font-size: 14px;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block body %}
+
+{% include "Cote/enseignant/includes/sidebar.html" %}
+
+<main class="main-content">
+    {% include "Cote/enseignant/includes/topbar.html" %}
+    
+    <div class="page-container">
+        <div class="page-header">
+            <h1 class="page-title"><i class="fas fa-pen-alt me-2"></i> Saisie des cotes</h1>
+            <p class="text-muted">Système de notation selon le bulletin congolais (P1, P2, Examen S1, P3, P4, Examen S2)</p>
+        </div>
+
+        <!-- Filtres -->
+        <div class="card card-filter">
+            <div class="card-body">
+                <div class="row g-4 align-items-end">
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold"><i class="fas fa-calendar-alt me-1"></i> Année scolaire</label>
+                        <select id="anneeSelect" class="form-select">
+                            <option value="">-- Chargement... --</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold"><i class="fas fa-users me-1"></i> Classe</label>
+                        <select id="classeSelect" class="form-select" disabled>
+                            <option value="">-- Sélectionnez d'abord une année --</option>
+                        </select>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label fw-semibold"><i class="fas fa-book me-1"></i> Cours</label>
+                        <select id="coursSelect" class="form-select" disabled>
+                            <option value="">-- Sélectionnez d'abord une classe --</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="mt-4 d-flex justify-content-end gap-2">
+                    <button id="reloadAnneeBtn" class="btn btn-outline-secondary" title="Recharger les années">
+                        <i class="fas fa-sync-alt"></i> Recharger
+                    </button>
+                    <button id="chargerBtn" class="btn btn-primary" disabled>
+                        <i class="fas fa-users me-2"></i> Charger les élèves
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Zone du tableau -->
+        <div id="cotesContainer" style="display: none;">
+            <div class="card shadow-sm mt-4">
+                <div class="card-header bg-white py-3">
+                    <h5 class="mb-0"><i class="fas fa-table me-2 text-primary"></i> Saisie des cotes</h5>
+                </div>
+                <div class="card-body p-0">
+                    <div id="tableWrapper" class="p-3">
+                        <!-- Tableau dynamique -->
+                    </div>
+                </div>
+                <div class="card-footer bg-white text-end">
+                    <button id="saveAllBtn" class="btn btn-success btn-lg px-5">
+                        <i class="fas fa-save me-2"></i> Enregistrer toutes les cotes
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Overlay de sauvegarde -->
+    <div id="savingOverlay" class="saving-spinner">
+        <div class="spinner-box">
+            <div class="loading-spinner" style="width: 2rem; height: 2rem;"></div>
+            <p class="mt-2 mb-0 fw-semibold">Enregistrement en cours...</p>
+        </div>
+    </div>
+
+    {% include "Cote/enseignant/includes/footer.html" %}
+</main>
+
+<script>
+    // ========== LOGIQUE COMPLÈTE ==========
+    let currentData = {
+        annee_id: null,
+        classe_id: null,
+        cours_id: null
+    };
+
+    // Affichage des messages toast
+    function showMessage(message, type = 'success') {
+        const alertDiv = document.createElement('div');
+        alertDiv.className = `alert alert-${type} alert-dismissible fade show alert-fixed`;
+        alertDiv.innerHTML = `
+            <div class="d-flex align-items-center">
+                <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-triangle'} me-2 fs-5"></i>
+                <div class="flex-grow-1">${message}</div>
+                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+            </div>
+        `;
+        document.body.appendChild(alertDiv);
+        setTimeout(() => {
+            alertDiv.classList.remove('show');
+            setTimeout(() => alertDiv.remove(), 300);
+        }, 4000);
+    }
+
+    // Charger les années scolaires depuis l'API
+    async function loadAnnees() {
+        const select = document.getElementById('anneeSelect');
+        select.innerHTML = '<option value="">-- Chargement... --</option>';
+        select.disabled = true;
+        try {
+            const response = await fetch('/api/enseignant/annees/');
+            if (!response.ok) {
+                const errorText = await response.text();
+                throw new Error(`HTTP ${response.status}: ${errorText}`);
+            }
+            const data = await response.json();
+            if (!data.annees || data.annees.length === 0) {
+                select.innerHTML = '<option value="">-- Aucune année trouvée --</option>';
+                showMessage('Vous n\'avez aucun cours attribué. Contactez le Directeur des Études.', 'warning');
+                return;
+            }
+            select.innerHTML = '<option value="">-- Choisissez une année --</option>';
+            data.annees.forEach(annee => {
+                const option = document.createElement('option');
+                option.value = annee.id;
+                option.textContent = annee.annee_scolaire;
+                select.appendChild(option);
+            });
+            select.disabled = false;
+        } catch (error) {
+            console.error('Erreur loadAnnees:', error);
+            select.innerHTML = '<option value="">-- Erreur chargement --</option>';
+            showMessage('Impossible de charger les années. Vérifiez que l\'enseignant a des attributions.', 'danger');
+        }
+    }
+
+    // Rechargement manuel des années
+    document.getElementById('reloadAnneeBtn').addEventListener('click', () => loadAnnees());
+
+    // Changement d'année
+    document.getElementById('anneeSelect').addEventListener('change', async function() {
+        const anneeId = this.value;
+        currentData.annee_id = anneeId;
+        const classeSelect = document.getElementById('classeSelect');
+        const coursSelect = document.getElementById('coursSelect');
+        const chargerBtn = document.getElementById('chargerBtn');
+
+        if (!anneeId) {
+            classeSelect.innerHTML = '<option value="">-- Sélectionnez une année --</option>';
+            classeSelect.disabled = true;
+            coursSelect.innerHTML = '<option value="">-- Sélectionnez une classe --</option>';
+            coursSelect.disabled = true;
+            chargerBtn.disabled = true;
+            document.getElementById('cotesContainer').style.display = 'none';
+            return;
+        }
+
+        classeSelect.innerHTML = '<option value="">Chargement...</option>';
+        classeSelect.disabled = true;
+        try {
+            const response = await fetch(`/api/enseignant/classes/?annee_id=${anneeId}`);
+            if (!response.ok) throw new Error('Erreur classes');
+            const data = await response.json();
+            if (!data.classes || data.classes.length === 0) {
+                classeSelect.innerHTML = '<option value="">-- Aucune classe --</option>';
+                showMessage('Aucune classe attribuée pour cette année.', 'warning');
+                return;
+            }
+            classeSelect.innerHTML = '<option value="">-- Sélectionnez une classe --</option>';
+            data.classes.forEach(cl => {
+                const option = document.createElement('option');
+                option.value = cl.id;
+                option.textContent = cl.nom_classe;
+                classeSelect.appendChild(option);
+            });
+            classeSelect.disabled = false;
+            coursSelect.innerHTML = '<option value="">-- Sélectionnez d\'abord une classe --</option>';
+            coursSelect.disabled = true;
+            chargerBtn.disabled = true;
+            document.getElementById('cotesContainer').style.display = 'none';
+        } catch (error) {
+            console.error(error);
+            classeSelect.innerHTML = '<option value="">Erreur</option>';
+            showMessage('Erreur chargement des classes', 'danger');
+        }
+    });
+
+    // Changement de classe
+    document.getElementById('classeSelect').addEventListener('change', async function() {
+        const classeId = this.value;
+        const anneeId = currentData.annee_id;
+        if (!anneeId || !classeId) return;
+
+        currentData.classe_id = classeId;
+        const coursSelect = document.getElementById('coursSelect');
+        coursSelect.innerHTML = '<option value="">Chargement...</option>';
+        coursSelect.disabled = true;
+        try {
+            const response = await fetch(`/api/enseignant/cours/?annee_id=${anneeId}&classe_id=${classeId}`);
+            if (!response.ok) throw new Error('Erreur cours');
+            const data = await response.json();
+            if (!data.cours || data.cours.length === 0) {
+                coursSelect.innerHTML = '<option value="">-- Aucun cours --</option>';
+                showMessage('Aucun cours attribué pour cette classe.', 'warning');
+                return;
+            }
+            coursSelect.innerHTML = '<option value="">-- Sélectionnez un cours --</option>';
+            data.cours.forEach(c => {
+                const option = document.createElement('option');
+                option.value = c.id;
+                option.textContent = `${c.nom_cours} (coeff ${c.coefficient})`;
+                coursSelect.appendChild(option);
+            });
+            coursSelect.disabled = false;
+            document.getElementById('chargerBtn').disabled = true;
+            document.getElementById('cotesContainer').style.display = 'none';
+        } catch (error) {
+            console.error(error);
+            coursSelect.innerHTML = '<option value="">Erreur</option>';
+            showMessage('Erreur chargement des cours', 'danger');
+        }
+    });
+
+    // Activation du bouton "Charger"
+    document.getElementById('coursSelect').addEventListener('change', function() {
+        currentData.cours_id = this.value;
+        const chargerBtn = document.getElementById('chargerBtn');
+        chargerBtn.disabled = !(currentData.annee_id && currentData.classe_id && currentData.cours_id);
+    });
+
+    // Chargement des élèves et du tableau
+    document.getElementById('chargerBtn').addEventListener('click', async function() {
+        const { annee_id, classe_id, cours_id } = currentData;
+        if (!annee_id || !classe_id || !cours_id) {
+            showMessage('Veuillez sélectionner tous les filtres', 'warning');
+            return;
+        }
+
+        const container = document.getElementById('cotesContainer');
+        const tableWrapper = document.getElementById('tableWrapper');
+        tableWrapper.innerHTML = '<div class="text-center py-5"><div class="loading-spinner"></div> Chargement des élèves...</div>';
+        container.style.display = 'block';
+
+        try {
+            const response = await fetch(`/api/enseignant/eleves-cotes/?annee_id=${annee_id}&classe_id=${classe_id}&cours_id=${cours_id}`);
+            if (!response.ok) throw new Error('Erreur réseau');
+            const data = await response.json();
+            if (!data.eleves || data.eleves.length === 0) {
+                tableWrapper.innerHTML = '<div class="empty-state"><i class="fas fa-users-slash fa-3x text-muted mb-3"></i><p>Aucun élève inscrit dans cette classe pour l\'année sélectionnée.</p></div>';
+                return;
+            }
+
+            // Construction du tableau avec colonne "Bulletin"
+            let html = `
+                <div class="table-responsive">
+                    <table class="table table-cotes table-hover align-middle">
+                        <thead>
+                            <tr>
+                                <th style="min-width: 180px;">Élève</th>
+                                <th colspan="3">Premier semestre</th>
+                                <th colspan="3">Second semestre</th>
+                                <th>Action</th>
+                            </tr>
+                            <tr>
+                                <th>Nom & prénom</th>
+                                <th>P1</th><th>P2</th><th>Examen S1</th>
+                                <th>P3</th><th>P4</th><th>Examen S2</th>
+                                <th>Bulletin</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
+            for (let eleve of data.eleves) {
+                const c = eleve.cote || {};
+                html += `
+                    <tr>
+                        <td>
+                            <strong>${escapeHtml(eleve.nom)} ${escapeHtml(eleve.prenom)}</strong><br>
+                            <small class="text-muted">Matricule: ${escapeHtml(eleve.matricule)}</small>
+                        </td>
+                        <td><input type="number" step="0.25" min="0" max="20" class="form-control form-control-sm" data-eleve="${eleve.id}" data-field="p1" value="${c.cote_p1 !== undefined && c.cote_p1 !== null ? c.cote_p1 : ''}"></td>
+                        <td><input type="number" step="0.25" min="0" max="20" class="form-control form-control-sm" data-eleve="${eleve.id}" data-field="p2" value="${c.cote_p2 !== undefined && c.cote_p2 !== null ? c.cote_p2 : ''}"></td>
+                        <td><input type="number" step="0.25" min="0" max="20" class="form-control form-control-sm" data-eleve="${eleve.id}" data-field="examen1" value="${c.examen_semestre_1 !== undefined && c.examen_semestre_1 !== null ? c.examen_semestre_1 : ''}"></td>
+                        <td><input type="number" step="0.25" min="0" max="20" class="form-control form-control-sm" data-eleve="${eleve.id}" data-field="p3" value="${c.cote_p3 !== undefined && c.cote_p3 !== null ? c.cote_p3 : ''}"></td>
+                        <td><input type="number" step="0.25" min="0" max="20" class="form-control form-control-sm" data-eleve="${eleve.id}" data-field="p4" value="${c.cote_p4 !== undefined && c.cote_p4 !== null ? c.cote_p4 : ''}"></td>
+                        <td><input type="number" step="0.25" min="0" max="20" class="form-control form-control-sm" data-eleve="${eleve.id}" data-field="examen2" value="${c.examen_semestre_2 !== undefined && c.examen_semestre_2 !== null ? c.examen_semestre_2 : ''}"></td>
+                        <td class="text-center">
+                            <a href="/bulletin/${eleve.id}/" target="_blank" class="btn btn-bulletin">
+                                <i class="fas fa-file-alt me-1"></i> Bulletin
+                            </a>
+                        </td>
+                    </tr>
+                `;
+            }
+            html += `</tbody>${'</table>'}</div>`;
+            tableWrapper.innerHTML = html;
+        } catch (error) {
+            console.error(error);
+            tableWrapper.innerHTML = '<div class="alert alert-danger">Erreur lors du chargement des élèves. Vérifiez votre connexion.</div>';
+            showMessage('Erreur chargement des élèves', 'danger');
+        }
+    });
+
+    // Sauvegarde de toutes les cotes
+    document.getElementById('saveAllBtn').addEventListener('click', async function() {
+        const { annee_id, classe_id, cours_id } = currentData;
+        if (!annee_id || !classe_id || !cours_id) {
+            showMessage('Aucune sélection valide', 'warning');
+            return;
+        }
+
+        const inputs = document.querySelectorAll('#tableWrapper input');
+        const cotesData = {};
+        let hasError = false;
+        inputs.forEach(input => {
+            const eleveId = input.dataset.eleve;
+            const field = input.dataset.field;
+            if (!cotesData[eleveId]) cotesData[eleveId] = {};
+            let value = input.value.trim();
+            if (value === "") value = null;
+            else value = parseFloat(value);
+            if (value !== null && (isNaN(value) || value < 0 || value > 20)) {
+                showMessage(`Note invalide (${field}) pour l'élève ID ${eleveId} : entre 0 et 20`, 'danger');
+                input.classList.add('is-invalid');
+                hasError = true;
+                return;
+            }
+            input.classList.remove('is-invalid');
+            cotesData[eleveId][field] = value;
+        });
+        if (hasError) return;
+
+        const overlay = document.getElementById('savingOverlay');
+        overlay.style.visibility = 'visible';
+        try {
+            const response = await fetch('/api/enseignant/sauvegarder-cotes/', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json', 'X-CSRFToken': getCookie('csrftoken') },
+                body: JSON.stringify({
+                    annee_id: annee_id,
+                    classe_id: classe_id,
+                    cours_id: cours_id,
+                    cotes: cotesData
+                })
+            });
+            const result = await response.json();
+            if (result.success) {
+                showMessage('Toutes les cotes ont été enregistrées avec succès', 'success');
+                // Recharger le tableau pour afficher les valeurs sauvegardées
+                document.getElementById('chargerBtn').click();
+            } else {
+                showMessage(result.error || 'Erreur lors de l\'enregistrement', 'danger');
+            }
+        } catch (error) {
+            showMessage('Erreur réseau', 'danger');
+        } finally {
+            overlay.style.visibility = 'hidden';
+        }
+    });
+
+    // Utilitaires
+    function escapeHtml(str) {
+        if (!str) return '';
+        return str.replace(/[&<>]/g, function(m) {
+            if (m === '&') return '&amp;';
+            if (m === '<') return '&lt;';
+            if (m === '>') return '&gt;';
+            return m;
+        });
+    }
+
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+
+    // Initialisation au chargement
+    document.addEventListener('DOMContentLoaded', function() {
+        loadAnnees();
+    });
+</script>
+{% endblock %} alors j'aimerai   que dans aisir cote qu'il ait pas des beacoup de chose mais aussi j'aimerai recadre concerant le point le courant sera cote en point mais pas en coefficiant j'aimerai que par example je dis le cours de math sera compter pour 40 point par example donc si le cours est sur 40 donc l'eleve ne peut pas avoir 41/40 il doit avoir seulement sur 40 mais aussi pour attribuer les cotes aux eleves l'enseignant celui qui va attribuer les cotes pour chaque eleve qui sera dans la classe qu'on lui a attribuer cours , dans le systeme il yaura pluseiurs enseignants et dans une classes on peut avoir meme 14 cours me ces cours sont gerer par plusieurs enseignant ca depend de nombre de cours que l'enseignant a reussi donc on fera ceci dans saisir_note l'enseigant aura un tableau qui va afficher les cours qui lui sont attribuer puis ces classes la aussi seront comme de lien si l'enseignant clique sur une classe on lui affiche tout les cours qu'on lui a donner dans cette classe une fois il est la bas on le nom du cours devient aussi un lien qui va montrer tout les eleves qui sont affecter dans cette salle puis une fois montrer ces eleves, les eleves seront dans les tableau premier collone les nom de tout les etudiant , deuxieme collone point premier periode, 3 eme collone point exament  apres examen il auyaura 1 eme semetre qui sera calcule comme ca point 1 ere periode + point 2 eme periode + examen qui forme 1 ere semester sachant que l'examen c;est double de periode don si la mathematique compte 40 point 1 ere periode ca sera toujours 40 pour 2 eme periode mais examen sera donc sur 80  , puis collonne suivante, 3 eme periode/ collone suivante 4 eme periode puis examen encore puis a la fin ca sera TG total general qui va calcule 1 ere semestrer et deuxieme semester puis on fait la moyenne pour trouver total general donc ctte logique sera appliquer pour chaque cours et par eleve et tout enseigant sera capable de faire ca dans son cours ou ses cours c'est dans cette logique que je raisonne pour que les cotes soient bien distribuer
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+j'apprecie deja comme tu calcule les point mais j'aimerai que tu aleve le titre la que tu vien d'ajouter comme (max 40)  et ca P1, P2, P3, P4 = points/période (40 ou 30)
+Examen = 2×points/période et  (sur base du total général / somme des maxima possibles : 155 / 880) j'aimerai que tu fasse comme ca tu vois comme c;est le directeur qui fixe le point pour chaque cours alors j'aimerai a ce que avant d'afficher tout les cours de sur 10 par exemple coffiche mette une ligne sur chaque colone par exemple 10| 10|20|40 ainsi de suite donc c'est ce qui montre le maximal de ce cours comme l'examen est le double j'ai mis sur 20 si le cours etait sur 40 ca aurai etait 80
+Nous devons modifier le tableau pour afficher dans l'en-tête des colonnes le maximum de points pour chaque période/examen, et ce maximum dépend du points_par_periode du cours. L'utilisateur veut que chaque colonne affiche le max (par exemple P1 / 40, P2 / 40, Examen / 80) comme dans le bulletin original de l'image (avec des maxima variables selon le cours). Il ne veut pas de texte explicatif supplémentaire.
+
+Nous allons restructurer le tableau pour :
+
+Afficher dans les sous-titres des colonnes de notes le maximum (basé sur les points par période du cours).
+
+Chaque ligne de matière aura son propre maximum (car chaque cours peut avoir un points_par_periode différent).
+
+Générer dynamiquement à partir des données des cours (et des cotes) tout en calculant totaux, pourcentage, etc.
+
+Mais puisque l'exemple statique montre seulement 3 cours (Français 40pts/période, Histoire 30, Maths 40), nous allons créer un tableau dynamique avec les données venant du backend. Le template Django doit recevoir bulletin_data avec les informations nécessaires, y compris points_par_periode pour chaque cours.
+
+Je vais réécrire le template pour qu'il affiche les maxima directement dans les en-têtes de colonnes (mais comme les maxima peuvent varier par ligne, l'approche standard est de les afficher dans la colonne "branches" ou bien dans une ligne spéciale "Maxima" avant les notes, ou encore dans chaque cellule de note avec un libellé. L'utilisateur veut comme dans le modèle original : une ligne "MAXIMA" avec les valeurs pour chaque colonne. C'est plus clair.
+
+Je vais donc créer une ligne séparée MAXIMA avant les notes, avec pour chaque colonne de note la valeur max correspondante (P1, P2, Examen S1, ...). Cette ligne sera calculée en fonction des points par période du premier cours ? Non, chaque cours peut avoir des maxima différents, donc la ligne maxima doit être répétée pour chaque cours ou affichée une seule fois avec les valeurs du cours en cours ? Le bulletin original montre une ligne "MAXIMA" avec des valeurs fixes (ex: 20, 40, 80...). Mais dans notre système, les maxima varient par matière. Pour rester cohérent, nous allons afficher dans l'en-tête les maxima en fonction du premier cours ? Mauvaise idée.
+
+Solution professionnelle : comme dans le modèle de l'image RDC, on affiche les maxima par matière dans la ligne "MAXIMA" juste au-dessus des notes, mais cette ligne est spécifique à chaque matière ? Non, dans l'image, les maxima sont globaux (10,20,40...). Mais dans notre cas, si les cours ont des points différents, il faut afficher les maxima par matière. Donc nous afficherons les maxima dans la colonne "BRANCHES" pour chaque matière sous forme "Français (max P1=40, P2=40, Ex=80)" ou bien ajouter une ligne de maxima avant chaque matière. Plus simple : dans la cellule de la matière, on indique le barème. Mais l'utilisateur veut "une ligne sur chaque colonne par exemple 10| 10|20|40". Je vais interpréter : il veut que pour chaque matière, le maximum soit indiqué en petit dans l'en-tête des colonnes (P1 max, P2 max, Examen max) mais ces maxima peuvent changer selon la matière. Comme c'est compliqué dans un tableau HTML statique, on peut générer le tableau avec les maxima affichés directement dans les cellules de note sous forme de fraction (ex: 34/40). C'est plus clair.
+
+Je vais modifier : dans chaque cellule de note, afficher la note obtenue et le max correspondant, par exemple "34/40". Et dans l'en-tête, indiquer simplement "P1", "P2", "Examen". Puis les totaux calculés.
+
+Mais l'utilisateur insiste sur l'affichage comme l'image. Je vais suivre son souhait : ajouter une ligne MAXIMA au-dessus des matières, avec des valeurs statiques (qui seront dynamiques mais on peut les calculer en fonction de tous les cours, ou prendre la plus grande valeur ? Non, c'est incohérent). En réalité, chaque matière ayant son propre max, la seule façon propre est d'afficher le max dans chaque cellule de note. Je vais donc le faire.

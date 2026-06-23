@@ -1,0 +1,405 @@
+/* static/css/login.css */
+
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700;800&display=swap');
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Poppins', sans-serif;
+}
+
+/* Animation */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.bg-white {
+    animation: fadeIn 0.5s ease-out;
+}
+
+/* Input focus effect */
+input:focus {
+    box-shadow: 0 0 0 3px rgba(30, 60, 114, 0.1);
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+    width: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+
+::-webkit-scrollbar-thumb {
+    background: #1e3c72;
+    border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: #2a5298;
+}
+/* ============================================
+   RESPONSIVE DESIGN PREMIUM - MOBILE FIRST
+   Ajoutez ce bloc à la fin de votre fichier CSS
+   pour garantir une expérience fluide sur tous les appareils.
+   ============================================ */
+
+/* -------------------- VARIABLES -------------------- */
+:root {
+    --breakpoint-mobile: 767px;
+    --breakpoint-tablette: 768px;
+    --breakpoint-desktop: 1024px;
+    --breakpoint-large: 1440px;
+
+    --font-size-base: calc(16px + 0.2vw);
+    --font-size-h1: clamp(1.8rem, 5vw, 2.5rem);
+    --font-size-h2: clamp(1.5rem, 4vw, 2rem);
+    --font-size-h3: clamp(1.25rem, 3vw, 1.75rem);
+    --font-size-body: clamp(0.95rem, 2vw, 1rem);
+    --font-size-small: clamp(0.8rem, 1.5vw, 0.9rem);
+
+    --spacing-xs: clamp(0.25rem, 1vw, 0.5rem);
+    --spacing-sm: clamp(0.5rem, 2vw, 0.75rem);
+    --spacing-md: clamp(0.75rem, 3vw, 1.25rem);
+    --spacing-lg: clamp(1rem, 4vw, 1.5rem);
+    --spacing-xl: clamp(1.5rem, 5vw, 2.5rem);
+
+    --border-radius-sm: 0.25rem;
+    --border-radius-md: 0.5rem;
+    --border-radius-lg: 1rem;
+
+    --transition-default: all 0.25s ease-in-out;
+    --shadow-sm: 0 2px 4px rgba(0,0,0,0.05);
+    --shadow-md: 0 4px 8px rgba(0,0,0,0.08);
+    --shadow-lg: 0 8px 16px rgba(0,0,0,0.1);
+}
+
+/* -------------------- GLOBALS -------------------- */
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
+html {
+    scroll-behavior: smooth;
+    -webkit-text-size-adjust: 100%;
+    -webkit-tap-highlight-color: transparent;
+}
+
+body {
+    font-size: var(--font-size-body);
+    line-height: 1.5;
+    overflow-x: hidden;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+}
+
+img,
+picture,
+video,
+canvas,
+svg {
+    max-width: 100%;
+    height: auto;
+    display: block;
+}
+
+/* Amélioration des zones cliquables sur mobile (taille minimum 44px) */
+button,
+a,
+input[type="button"],
+input[type="submit"],
+.btn,
+[role="button"],
+.nav-link,
+.menu-item {
+    min-height: 44px;
+    min-width: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Suppression des scrollbars horizontales intempestives */
+.container,
+.row,
+[class*="col-"],
+.content-wrapper,
+.main-content {
+    max-width: 100%;
+    overflow-x: hidden;
+}
+
+/* Tableaux et iframes responsives */
+table,
+iframe,
+.video-container,
+.responsive-table {
+    width: 100%;
+    overflow-x: auto;
+    display: block;
+}
+
+table {
+    border-collapse: collapse;
+    border-spacing: 0;
+}
+
+/* Liens et transitions douces */
+a,
+button,
+.btn,
+.card,
+input,
+select,
+textarea {
+    transition: var(--transition-default);
+}
+
+/* Ombres légères premium */
+.card,
+.card-premium,
+.modal,
+.dropdown-menu {
+    box-shadow: var(--shadow-sm);
+}
+
+.card-premium:hover,
+.btn-premium:hover {
+    box-shadow: var(--shadow-md);
+}
+
+/* -------------------- TYPOGRAPHIE FLUIDE -------------------- */
+h1, .h1 {
+    font-size: var(--font-size-h1);
+    margin-bottom: var(--spacing-md);
+}
+h2, .h2 {
+    font-size: var(--font-size-h2);
+    margin-bottom: var(--spacing-sm);
+}
+h3, .h3 {
+    font-size: var(--font-size-h3);
+    margin-bottom: var(--spacing-sm);
+}
+p, .text-body {
+    font-size: var(--font-size-body);
+    margin-bottom: var(--spacing-md);
+}
+small, .text-small {
+    font-size: var(--font-size-small);
+}
+
+/* -------------------- GRILLES RESPONSIVES -------------------- */
+.grid-responsive {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: var(--spacing-lg);
+}
+
+/* Flexbox pour les listes */
+.flex-responsive {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--spacing-md);
+    align-items: center;
+    justify-content: flex-start;
+}
+
+/* Espacements adaptables */
+.section {
+    padding: var(--spacing-xl) var(--spacing-md);
+}
+.container-fluid {
+    padding-left: var(--spacing-md);
+    padding-right: var(--spacing-md);
+}
+
+/* -------------------- MOBILE FIRST (0 à 767px) -------------------- */
+/* Rien de spécial ici car tout est déjà mobile par défaut.
+   On va juste renforcer certains comportements tactiles et marges */
+@media (max-width: 767px) {
+    body {
+        -webkit-tap-highlight-color: rgba(0,0,0,0.05);
+    }
+
+    /* Réduction des paddings sur mobile */
+    .card-body-premium,
+    .content-wrapper,
+    .main-content {
+        padding-left: var(--spacing-sm);
+        padding-right: var(--spacing-sm);
+    }
+
+    /* Empilement des éléments flex sur mobile */
+    .flex-responsive {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    /* Boutons pleine largeur sur mobile (optionnel, mais souvent préférable) */
+    .btn-premium,
+    button[type="submit"],
+    .btn {
+        width: 100%;
+        margin-bottom: var(--spacing-sm);
+    }
+
+    /* Ajustement des modals et dropdowns pour qu'ils ne dépassent pas */
+    .modal-dialog {
+        margin: var(--spacing-md);
+        max-width: calc(100% - 2 * var(--spacing-md));
+    }
+}
+
+/* -------------------- TABLETTES (768px à 1023px) -------------------- */
+@media (min-width: 768px) and (max-width: 1023px) {
+    .grid-responsive {
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: var(--spacing-lg);
+    }
+
+    .flex-responsive {
+        flex-direction: row;
+        flex-wrap: wrap;
+    }
+
+    .btn-premium,
+    button[type="submit"] {
+        width: auto;
+        min-width: 120px;
+    }
+
+    /* Légère augmentation des marges */
+    .container-fluid {
+        padding-left: var(--spacing-lg);
+        padding-right: var(--spacing-lg);
+    }
+}
+
+/* -------------------- DESKTOP (≥1024px) -------------------- */
+@media (min-width: 1024px) {
+    .grid-responsive {
+        grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+        gap: var(--spacing-xl);
+    }
+
+    body {
+        font-size: clamp(1rem, 1vw, 1.125rem);
+    }
+
+    /* Centrage du contenu pour les grands écrans */
+    .container {
+        max-width: 1200px;
+        margin-left: auto;
+        margin-right: auto;
+    }
+}
+
+/* -------------------- GRANDS ÉCRANS (≥1440px) -------------------- */
+@media (min-width: 1440px) {
+    .container {
+        max-width: 1400px;
+    }
+
+    body {
+        font-size: 1.125rem;
+    }
+
+    .grid-responsive {
+        grid-template-columns: repeat(4, 1fr);
+    }
+
+    /* Limitation de la largeur des colonnes pour ne pas avoir des lignes trop longues */
+    .col-lg-4, .col-md-6 {
+        max-width: 380px;
+    }
+}
+
+/* -------------------- UTILITAIRES RESPONSIVES -------------------- */
+/* Masquer/afficher selon écran */
+.hide-on-mobile {
+    display: none;
+}
+@media (min-width: 768px) {
+    .hide-on-mobile {
+        display: block;
+    }
+    .show-on-mobile-only {
+        display: none;
+    }
+}
+@media (max-width: 767px) {
+    .show-on-mobile-only {
+        display: block;
+    }
+    .hide-on-desktop {
+        display: none;
+    }
+}
+
+/* Texte centré sur mobile, aligné sur desktop */
+@media (max-width: 767px) {
+    .text-center-mobile {
+        text-align: center;
+    }
+}
+
+/* Ajustement des images pour éviter les débordements */
+img.fluid {
+    width: 100%;
+    height: auto;
+    object-fit: cover;
+}
+
+/* Empêcher le défilement horizontal forcé */
+html, body {
+    overflow-x: hidden;
+    position: relative;
+}
+
+/* Bordures et ombres cohérentes */
+.card, .card-premium, .modal-content {
+    border-radius: var(--border-radius-md);
+    overflow: hidden;
+}
+
+.btn-premium, button, input, select, textarea {
+    border-radius: var(--border-radius-sm);
+}
+
+/* Amélioration du défilement tactile sur iOS */
+* {
+    -webkit-overflow-scrolling: touch;
+}
+
+/* Scrollbar personnalisée (optionnel, plus premium) */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 10px;
+}
+::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 10px;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+}

@@ -1,0 +1,44 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="fr" data-theme="{% if request.session.theme %}{{ request.session.theme }}{% else %}light{% endif %}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Espace Enseignant | CS KABA{% endblock %}</title>
+
+    <!-- Font Awesome & Google Fonts -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <!-- Styles principaux (theme + layout) -->
+    <link rel="stylesheet" href="{% static 'css/enseignant/style.css' %}">
+
+    <!-- Styles additionnels spécifiques à la page -->
+    {% block extra_head %}{% endblock %}
+</head>
+<body>
+<div class="app-wrapper">
+    {% block sidebar %}
+        {% include "Cote/enseignant/includes/sidebar.html" %}
+    {% endblock %}
+
+    <div class="main-content">
+        {% block topbar %}
+            {% include "Cote/enseignant/includes/topbar.html" %}
+        {% endblock %}
+
+        <div class="content-wrapper">
+            {% block body %}{% endblock %}
+        </div>
+
+        {% block footer %}
+            {% include "Cote/enseignant/includes/footer.html" %}
+        {% endblock %}
+    </div>
+</div>
+
+<!-- Scripts principaux -->
+<script src="{% static 'js/enseignant/main.js' %}"></script>
+{% block extra_scripts %}{% endblock %}
+</body>
+</html>

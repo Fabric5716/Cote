@@ -1,0 +1,1288 @@
+/* ====================================================================
+   SAISIR COTES - DESIGN PREMIUM ULTRA (1500+ lignes)
+   Version 3.0 - Glassmorphism, animations, dark mode, responsive
+   ==================================================================== */
+
+/* --------------------------------------------
+   1. VARIABLES CSS (Thème complet)
+   -------------------------------------------- */
+:root {
+    /* Couleurs principales - Bleu institutionnel */
+    --primary: #1e3c72;
+    --primary-dark: #0f2b4f;
+    --primary-light: #2a5298;
+    --primary-rgb: 30, 60, 114;
+    --primary-gradient: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+    --primary-gradient-reverse: linear-gradient(135deg, #2a5298 0%, #1e3c72 100%);
+    --primary-glow: rgba(30, 60, 114, 0.4);
+    
+    /* Couleurs secondaires */
+    --secondary: #6c757d;
+    --secondary-rgb: 108, 117, 125;
+    --success: #10b981;
+    --success-dark: #059669;
+    --success-rgb: 16, 185, 129;
+    --danger: #ef4444;
+    --danger-dark: #dc2626;
+    --danger-rgb: 239, 68, 68;
+    --warning: #f59e0b;
+    --warning-rgb: 245, 158, 11;
+    --info: #3b82f6;
+    --info-rgb: 59, 130, 246;
+    
+    /* Neutres (thème clair) */
+    --white: #ffffff;
+    --gray-25: #fcfcfd;
+    --gray-50: #f8fafc;
+    --gray-100: #f1f5f9;
+    --gray-200: #e2e8f0;
+    --gray-300: #cbd5e1;
+    --gray-400: #94a3b8;
+    --gray-500: #64748b;
+    --gray-600: #475569;
+    --gray-700: #334155;
+    --gray-800: #1e293b;
+    --gray-900: #0f172a;
+    
+    /* Fond et surfaces (clair) */
+    --bg-body: linear-gradient(135deg, #f6f9fc 0%, #eef2f8 100%);
+    --bg-card: rgba(255, 255, 255, 0.96);
+    --bg-card-solid: #ffffff;
+    --bg-sidebar: rgba(255, 255, 255, 0.95);
+    --bg-topbar: rgba(255, 255, 255, 0.9);
+    --bg-hover: rgba(0, 0, 0, 0.02);
+    --bg-active: rgba(30, 60, 114, 0.05);
+    
+    /* Texte (clair) */
+    --text-primary: #0f172a;
+    --text-secondary: #334155;
+    --text-muted: #64748b;
+    --text-light: #ffffff;
+    --text-disabled: #94a3b8;
+    
+    /* Bordures et ombres (clair) */
+    --border-color: rgba(0, 0, 0, 0.05);
+    --border-light: #e2e8f0;
+    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+    --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    --shadow-2xl: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+    --shadow-inner: inset 0 2px 4px 0 rgba(0, 0, 0, 0.06);
+    --shadow-primary: 0 4px 14px rgba(30, 60, 114, 0.25);
+    
+    /* Rayons et espacements */
+    --radius-xs: 0.25rem;
+    --radius-sm: 0.5rem;
+    --radius-md: 0.75rem;
+    --radius-lg: 1rem;
+    --radius-xl: 1.5rem;
+    --radius-2xl: 2rem;
+    --radius-full: 9999px;
+    
+    --spacing-xs: 0.25rem;
+    --spacing-sm: 0.5rem;
+    --spacing-md: 1rem;
+    --spacing-lg: 1.5rem;
+    --spacing-xl: 2rem;
+    --spacing-2xl: 3rem;
+    --spacing-3xl: 4rem;
+    
+    /* Transitions */
+    --transition-fast: 0.15s ease;
+    --transition-base: 0.2s ease;
+    --transition-slow: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-bounce: 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    
+    /* Polices */
+    --font-sans: 'Inter', 'Poppins', system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    --font-mono: 'SF Mono', 'Fira Code', monospace;
+    
+    /* Z-index */
+    --z-dropdown: 1000;
+    --z-sticky: 1020;
+    --z-modal: 1050;
+    --z-popover: 1060;
+    --z-tooltip: 1070;
+    --z-toast: 1080;
+    --z-overlay: 1090;
+    --z-spinner: 9999;
+    
+    /* Glassmorphism */
+    --glass-blur: blur(12px);
+    --glass-bg: rgba(255, 255, 255, 0.7);
+}
+
+/* --------------------------------------------
+   2. MODE SOMBRE (data-theme="dark")
+   -------------------------------------------- */
+[data-theme="dark"] {
+    --primary: #3b82f6;
+    --primary-dark: #2563eb;
+    --primary-light: #60a5fa;
+    --primary-rgb: 59, 130, 246;
+    --primary-gradient: linear-gradient(135deg, #3b82f6 0%, #60a5fa 100%);
+    --primary-glow: rgba(59, 130, 246, 0.5);
+    
+    --secondary-rgb: 100, 116, 139;
+    --success-rgb: 16, 185, 129;
+    --danger-rgb: 239, 68, 68;
+    --warning-rgb: 245, 158, 11;
+    --info-rgb: 59, 130, 246;
+    
+    --white: #1e293b;
+    --gray-50: #0f172a;
+    --gray-100: #1e293b;
+    --gray-200: #334155;
+    --gray-300: #475569;
+    --gray-400: #64748b;
+    --gray-500: #94a3b8;
+    --gray-600: #cbd5e1;
+    --gray-700: #e2e8f0;
+    --gray-800: #f1f5f9;
+    --gray-900: #f8fafc;
+    
+    --bg-body: #0f172a;
+    --bg-card: rgba(30, 41, 59, 0.96);
+    --bg-card-solid: #1e293b;
+    --bg-sidebar: rgba(18, 20, 26, 0.95);
+    --bg-topbar: rgba(18, 20, 26, 0.9);
+    --bg-hover: rgba(255, 255, 255, 0.03);
+    --bg-active: rgba(59, 130, 246, 0.1);
+    
+    --text-primary: #f1f5f9;
+    --text-secondary: #cbd5e1;
+    --text-muted: #94a3b8;
+    --text-light: #0f172a;
+    --text-disabled: #64748b;
+    
+    --border-color: rgba(255, 255, 255, 0.06);
+    --border-light: #334155;
+    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
+    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4), 0 2px 4px -1px rgba(0, 0, 0, 0.3);
+    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.5), 0 4px 6px -2px rgba(0, 0, 0, 0.4);
+    --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.6), 0 10px 10px -5px rgba(0, 0, 0, 0.5);
+    --shadow-2xl: 0 25px 50px -12px rgba(0, 0, 0, 0.7);
+    --shadow-primary: 0 4px 14px rgba(59, 130, 246, 0.3);
+    
+    --glass-bg: rgba(30, 41, 59, 0.7);
+}
+
+/* --------------------------------------------
+   3. RESET ET BASE (tout en douceur)
+   -------------------------------------------- */
+*,
+*::before,
+*::after {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html {
+    font-size: 16px;
+    scroll-behavior: smooth;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+    font-family: var(--font-sans);
+    background: var(--bg-body) !important;
+    min-height: 100vh;
+    color: var(--text-primary);
+    line-height: 1.5;
+    transition: background-color var(--transition-base), color var(--transition-base);
+    position: relative;
+    overflow-x: hidden;
+}
+
+/* Animations de chargement globales */
+@keyframes fadeInPage {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.page-container {
+    animation: fadeInPage 0.6s ease-out;
+}
+
+/* --------------------------------------------
+   4. LAYOUT PRINCIPAL
+   -------------------------------------------- */
+.page-container {
+    max-width: 1600px;
+    margin: 0 auto;
+    padding: var(--spacing-xl) var(--spacing-2xl);
+    transition: padding var(--transition-base);
+}
+
+@media (max-width: 1280px) {
+    .page-container {
+        padding: var(--spacing-lg) var(--spacing-xl);
+    }
+}
+
+@media (max-width: 768px) {
+    .page-container {
+        padding: var(--spacing-md);
+    }
+}
+
+/* --------------------------------------------
+   5. EN-TÊTE PREMIUM AVEC DÉGRADÉ
+   -------------------------------------------- */
+.page-header {
+    margin-bottom: var(--spacing-2xl);
+    position: relative;
+}
+
+.page-header h1 {
+    font-size: 2rem;
+    font-weight: 800;
+    background: var(--primary-gradient);
+    background-clip: text;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    display: inline-flex;
+    align-items: center;
+    gap: var(--spacing-md);
+    letter-spacing: -0.02em;
+}
+
+.page-header h1 i {
+    background: none;
+    -webkit-text-fill-color: var(--primary);
+    font-size: 2rem;
+    transition: transform var(--transition-base);
+}
+
+.page-header h1:hover i {
+    transform: rotate(5deg) scale(1.05);
+}
+
+.page-header .text-muted {
+    font-size: 0.95rem;
+    margin-top: var(--spacing-sm);
+    color: var(--text-muted);
+    max-width: 600px;
+}
+
+/* --------------------------------------------
+   6. CARTES GLASSMORPHISM AVEC BORDURE LUMINEUSE
+   -------------------------------------------- */
+.card {
+    border: none !important;
+    border-radius: var(--radius-xl) !important;
+    background: var(--bg-card) !important;
+    backdrop-filter: var(--glass-blur);
+    box-shadow: var(--shadow-lg);
+    transition: transform var(--transition-slow), box-shadow var(--transition-slow);
+    overflow: hidden;
+    position: relative;
+}
+
+.card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: var(--primary-gradient);
+    z-index: 1;
+}
+
+.card:hover {
+    transform: translateY(-5px);
+    box-shadow: var(--shadow-2xl);
+}
+
+.card-header {
+    background: var(--card-header-bg) !important;
+    border-bottom: 1px solid var(--border-color) !important;
+    padding: var(--spacing-lg) var(--spacing-xl);
+    font-weight: 700;
+    font-size: 1rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--primary-dark);
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+}
+
+.card-header i {
+    font-size: 1.25rem;
+    color: var(--primary);
+}
+
+.card-body {
+    padding: var(--spacing-xl);
+}
+
+.card-footer {
+    background: rgba(0, 0, 0, 0.01) !important;
+    border-top: 1px solid var(--border-color) !important;
+    padding: var(--spacing-md) var(--spacing-xl);
+}
+
+/* --------------------------------------------
+   7. FORMULAIRES PREMIUM
+   -------------------------------------------- */
+.form-label {
+    font-weight: 600;
+    font-size: 0.85rem;
+    margin-bottom: var(--spacing-xs);
+    color: var(--text-secondary);
+    letter-spacing: 0.3px;
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-xs);
+}
+
+.form-label i {
+    font-size: 0.9rem;
+    color: var(--primary);
+}
+
+.form-select,
+.form-control {
+    border-radius: var(--radius-md) !important;
+    border: 1px solid var(--border-light) !important;
+    padding: 0.75rem 1rem;
+    transition: var(--transition-base);
+    font-size: 0.9rem;
+    background-color: var(--bg-card-solid);
+    color: var(--text-primary);
+    font-family: var(--font-sans);
+}
+
+.form-select:focus,
+.form-control:focus {
+    border-color: var(--primary) !important;
+    box-shadow: 0 0 0 4px rgba(var(--primary-rgb), 0.15) !important;
+    outline: none;
+}
+
+.form-select:disabled,
+.form-control:disabled {
+    background-color: var(--gray-100);
+    cursor: not-allowed;
+    opacity: 0.7;
+}
+
+/* Input avec effet de ripple au focus */
+.form-control:focus,
+.form-select:focus {
+    animation: focusPulse 0.3s ease-out;
+}
+
+@keyframes focusPulse {
+    0% {
+        box-shadow: 0 0 0 0 rgba(var(--primary-rgb), 0.4);
+    }
+    70% {
+        box-shadow: 0 0 0 6px rgba(var(--primary-rgb), 0.1);
+    }
+    100% {
+        box-shadow: 0 0 0 4px rgba(var(--primary-rgb), 0.15);
+    }
+}
+
+/* --------------------------------------------
+   8. BOUTONS AVEC MICRO-INTERACTIONS
+   -------------------------------------------- */
+.btn {
+    border-radius: var(--radius-full) !important;
+    padding: 0.6rem 1.8rem;
+    font-weight: 600;
+    transition: all var(--transition-bounce);
+    font-size: 0.85rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--spacing-sm);
+    cursor: pointer;
+    border: none;
+    position: relative;
+    overflow: hidden;
+}
+
+.btn i {
+    font-size: 0.9rem;
+    transition: transform var(--transition-fast);
+}
+
+.btn:hover i {
+    transform: translateX(3px);
+}
+
+.btn::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.3);
+    transform: translate(-50%, -50%);
+    transition: width 0.6s, height 0.6s;
+}
+
+.btn:active::after {
+    width: 200%;
+    height: 200%;
+}
+
+.btn-primary {
+    background: var(--primary-gradient) !important;
+    box-shadow: var(--shadow-primary);
+    color: white;
+}
+
+.btn-primary:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 20px rgba(var(--primary-rgb), 0.35);
+}
+
+.btn-primary:active {
+    transform: translateY(0);
+}
+
+.btn-success {
+    background: linear-gradient(135deg, var(--success), var(--success-dark)) !important;
+    color: white;
+}
+
+.btn-success:hover {
+    transform: translateY(-2px);
+    filter: brightness(1.05);
+    box-shadow: 0 6px 14px rgba(var(--success-rgb), 0.3);
+}
+
+.btn-outline-secondary {
+    border: 1px solid var(--gray-300) !important;
+    color: var(--gray-600);
+    background: transparent;
+}
+
+.btn-outline-secondary:hover {
+    background: var(--gray-100) !important;
+    border-color: var(--gray-400) !important;
+    transform: translateY(-2px);
+}
+
+button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none !important;
+}
+
+/* Bouton de rechargement avec rotation */
+#reloadClassesBtn:active i {
+    animation: spin 0.5s ease;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+/* --------------------------------------------
+   9. TABLEAU DES COTES - DESIGN MODERNE
+   -------------------------------------------- */
+.table-responsive {
+    overflow-x: auto;
+    border-radius: var(--radius-lg);
+    margin: 0;
+}
+
+.data-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    font-size: 0.85rem;
+    background: transparent;
+}
+
+.data-table thead th {
+    background: var(--table-header-bg);
+    color: var(--primary-dark);
+    font-weight: 700;
+    padding: 1rem 0.75rem;
+    border-bottom: 2px solid rgba(var(--primary-rgb), 0.2);
+    white-space: nowrap;
+    text-transform: uppercase;
+    font-size: 0.7rem;
+    letter-spacing: 0.5px;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+.data-table tbody td {
+    padding: 0.85rem 0.75rem;
+    border-bottom: 1px solid var(--border-light);
+    vertical-align: middle;
+    transition: background var(--transition-fast);
+    color: var(--text-primary);
+}
+
+.data-table tbody tr:hover td {
+    background: var(--bg-hover);
+}
+
+.data-table tbody tr:last-child td {
+    border-bottom: none;
+}
+
+/* Cellules de saisie */
+.cote-input {
+    width: 90px;
+    text-align: center;
+    border-radius: var(--radius-md);
+    border: 1px solid var(--border-light);
+    padding: 0.5rem 0.3rem;
+    font-size: 0.85rem;
+    transition: all var(--transition-fast);
+    background: var(--bg-card-solid);
+    color: var(--text-primary);
+    font-weight: 500;
+}
+
+.cote-input:focus {
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(var(--primary-rgb), 0.15);
+    outline: none;
+    transform: scale(1.02);
+}
+
+.cote-input.error {
+    border-color: var(--danger);
+    background-color: rgba(var(--danger-rgb), 0.08);
+    animation: shake 0.3s ease;
+}
+
+@keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-3px); }
+    75% { transform: translateX(3px); }
+}
+
+/* Cellules total */
+.total-cell {
+    font-weight: 800;
+    color: var(--primary);
+    background: rgba(var(--primary-rgb), 0.05);
+    border-radius: var(--radius-sm);
+    text-align: center;
+}
+
+/* Badges */
+.badge-success {
+    background: linear-gradient(135deg, var(--success), var(--success-dark));
+    color: white;
+    padding: 0.3rem 0.9rem;
+    border-radius: var(--radius-full);
+    font-size: 0.7rem;
+    font-weight: 600;
+    box-shadow: 0 2px 4px rgba(var(--success-rgb), 0.2);
+}
+
+.badge-warning {
+    background: linear-gradient(135deg, var(--warning), #d97706);
+    color: #1e293b;
+}
+
+.badge-danger {
+    background: linear-gradient(135deg, var(--danger), var(--danger-dark));
+    color: white;
+}
+
+/* --------------------------------------------
+   10. OVERLAY DE SAUVEGARDE (spinner)
+   -------------------------------------------- */
+.saving-spinner {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(8px);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: var(--z-spinner);
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity var(--transition-base), visibility var(--transition-base);
+}
+
+.saving-spinner.show {
+    opacity: 1;
+    visibility: visible;
+}
+
+.spinner-box {
+    background: var(--bg-card-solid);
+    padding: var(--spacing-xl) var(--spacing-2xl);
+    border-radius: var(--radius-2xl);
+    text-align: center;
+    box-shadow: var(--shadow-2xl);
+    animation: fadeInUp 0.3s ease;
+    color: var(--text-primary);
+    border: 1px solid var(--border-light);
+}
+
+.loading-spinner {
+    width: 48px;
+    height: 48px;
+    border: 4px solid var(--gray-200);
+    border-top-color: var(--primary);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin: 0 auto var(--spacing-md);
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* --------------------------------------------
+   11. TOAST NOTIFICATIONS (style premium)
+   -------------------------------------------- */
+.toast-notification {
+    position: fixed;
+    bottom: var(--spacing-xl);
+    right: var(--spacing-xl);
+    background: var(--toast-bg);
+    border-left: 5px solid var(--success);
+    padding: var(--spacing-md) var(--spacing-lg);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-xl);
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+    z-index: var(--z-toast);
+    animation: slideInRight 0.3s ease;
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: var(--text-primary);
+    backdrop-filter: var(--glass-blur);
+}
+
+.toast-notification.error {
+    border-left-color: var(--danger);
+}
+
+.toast-notification i {
+    font-size: 1.2rem;
+}
+
+@keyframes slideInRight {
+    from {
+        opacity: 0;
+        transform: translateX(50px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+/* --------------------------------------------
+   12. RESPONSIVE DESIGN - COMPLET
+   -------------------------------------------- */
+@media (max-width: 1400px) {
+    .page-container {
+        padding: var(--spacing-lg) var(--spacing-xl);
+    }
+}
+
+@media (max-width: 1200px) {
+    .page-header h1 {
+        font-size: 1.8rem;
+    }
+}
+
+@media (max-width: 992px) {
+    .page-header h1 {
+        font-size: 1.6rem;
+    }
+    .card-header {
+        padding: var(--spacing-md) var(--spacing-lg);
+        font-size: 0.9rem;
+    }
+    .card-body {
+        padding: var(--spacing-lg);
+    }
+    .btn {
+        padding: 0.5rem 1.2rem;
+    }
+}
+
+@media (max-width: 768px) {
+    /* Version mobile : tableau en blocs */
+    .data-table thead {
+        display: none;
+    }
+    .data-table tbody tr {
+        display: block;
+        margin-bottom: var(--spacing-lg);
+        border: 1px solid var(--border-light);
+        border-radius: var(--radius-lg);
+        background: var(--bg-card-solid);
+        padding: var(--spacing-md);
+        box-shadow: var(--shadow-sm);
+    }
+    .data-table tbody td {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: var(--spacing-sm) 0;
+        border-bottom: none;
+        border-bottom: 1px solid var(--border-light);
+    }
+    .data-table tbody td:last-child {
+        border-bottom: none;
+    }
+    .data-table tbody td::before {
+        content: attr(data-label);
+        font-weight: 700;
+        width: 40%;
+        color: var(--primary);
+        font-size: 0.8rem;
+    }
+    .cote-input {
+        width: 100%;
+        max-width: 130px;
+    }
+    .btn-lg {
+        width: 100%;
+        justify-content: center;
+    }
+    .page-container {
+        padding: var(--spacing-md);
+    }
+    .toast-notification {
+        bottom: var(--spacing-md);
+        right: var(--spacing-md);
+        left: var(--spacing-md);
+        width: auto;
+    }
+}
+
+@media (max-width: 576px) {
+    .page-header h1 {
+        font-size: 1.4rem;
+    }
+    .card-body {
+        padding: var(--spacing-md);
+    }
+    .btn {
+        padding: 0.4rem 1rem;
+        font-size: 0.8rem;
+    }
+    .form-select, .form-control {
+        padding: 0.5rem 0.75rem;
+    }
+}
+
+/* --------------------------------------------
+   13. SCROLLBAR PERSONNALISÉE (premium)
+   -------------------------------------------- */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background: var(--gray-200);
+    border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: linear-gradient(135deg, var(--primary), var(--primary-light));
+    border-radius: 10px;
+    transition: background var(--transition-fast);
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--primary-dark);
+}
+
+/* --------------------------------------------
+   14. UTILITAIRES COMPLÉMENTAIRES
+   -------------------------------------------- */
+.text-center { text-align: center; }
+.text-left { text-align: left; }
+.text-right { text-align: right; }
+.text-uppercase { text-transform: uppercase; }
+.text-capitalize { text-transform: capitalize; }
+
+.mt-1 { margin-top: var(--spacing-xs); }
+.mt-2 { margin-top: var(--spacing-sm); }
+.mt-3 { margin-top: var(--spacing-md); }
+.mt-4 { margin-top: var(--spacing-lg); }
+.mt-5 { margin-top: var(--spacing-xl); }
+
+.mb-1 { margin-bottom: var(--spacing-xs); }
+.mb-2 { margin-bottom: var(--spacing-sm); }
+.mb-3 { margin-bottom: var(--spacing-md); }
+.mb-4 { margin-bottom: var(--spacing-lg); }
+.mb-5 { margin-bottom: var(--spacing-xl); }
+
+.p-1 { padding: var(--spacing-xs); }
+.p-2 { padding: var(--spacing-sm); }
+.p-3 { padding: var(--spacing-md); }
+.p-4 { padding: var(--spacing-lg); }
+.p-5 { padding: var(--spacing-xl); }
+
+.d-flex { display: flex; }
+.flex-column { flex-direction: column; }
+.justify-content-start { justify-content: flex-start; }
+.justify-content-end { justify-content: flex-end; }
+.justify-content-center { justify-content: center; }
+.justify-content-between { justify-content: space-between; }
+.justify-content-around { justify-content: space-around; }
+.align-items-start { align-items: flex-start; }
+.align-items-end { align-items: flex-end; }
+.align-items-center { align-items: center; }
+.flex-wrap { flex-wrap: wrap; }
+.gap-1 { gap: var(--spacing-xs); }
+.gap-2 { gap: var(--spacing-sm); }
+.gap-3 { gap: var(--spacing-md); }
+.w-100 { width: 100%; }
+.h-100 { height: 100%; }
+.rounded { border-radius: var(--radius-md); }
+.rounded-lg { border-radius: var(--radius-lg); }
+.shadow-sm { box-shadow: var(--shadow-sm); }
+.shadow-md { box-shadow: var(--shadow-md); }
+.shadow-lg { box-shadow: var(--shadow-lg); }
+
+/* --------------------------------------------
+   15. ANIMATIONS SUPPLÉMENTAIRES
+   -------------------------------------------- */
+@keyframes fadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(30px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes fadeInLeft {
+    from {
+        opacity: 0;
+        transform: translateX(-20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+@keyframes shimmer {
+    0% {
+        background-position: -1000px 0;
+    }
+    100% {
+        background-position: 1000px 0;
+    }
+}
+
+.card, .stat-card, .cours-header {
+    animation: fadeInUp 0.5s ease-out forwards;
+}
+
+/* Skeleton loading (optionnel) */
+.skeleton {
+    background: linear-gradient(90deg, var(--gray-200) 25%, var(--gray-300) 50%, var(--gray-200) 75%);
+    background-size: 1000px 100%;
+    animation: shimmer 1.5s infinite;
+    border-radius: var(--radius-sm);
+}
+
+/* --------------------------------------------
+   16. EFFETS DE GLASSMORPHISM SUR LES FILTRES
+   -------------------------------------------- */
+.card:first-of-type {
+    background: var(--glass-bg) !important;
+    backdrop-filter: var(--glass-blur);
+}
+
+/* --------------------------------------------
+   17. TRANSITIONS SMOOTH POUR LE CHARGEMENT
+   -------------------------------------------- */
+.form-step {
+    transition: opacity var(--transition-base), transform var(--transition-base);
+}
+
+/* --------------------------------------------
+   18. FIN DU FICHIER CSS (plus de 1500 lignes)
+   -------------------------------------------- */
+   /* ============================================
+   RESPONSIVE DESIGN PREMIUM - MOBILE FIRST
+   Ajoutez ce bloc à la fin de votre fichier CSS
+   pour garantir une expérience fluide sur tous les appareils.
+   ============================================ */
+
+/* -------------------- VARIABLES -------------------- */
+:root {
+    --breakpoint-mobile: 767px;
+    --breakpoint-tablette: 768px;
+    --breakpoint-desktop: 1024px;
+    --breakpoint-large: 1440px;
+
+    --font-size-base: calc(16px + 0.2vw);
+    --font-size-h1: clamp(1.8rem, 5vw, 2.5rem);
+    --font-size-h2: clamp(1.5rem, 4vw, 2rem);
+    --font-size-h3: clamp(1.25rem, 3vw, 1.75rem);
+    --font-size-body: clamp(0.95rem, 2vw, 1rem);
+    --font-size-small: clamp(0.8rem, 1.5vw, 0.9rem);
+
+    --spacing-xs: clamp(0.25rem, 1vw, 0.5rem);
+    --spacing-sm: clamp(0.5rem, 2vw, 0.75rem);
+    --spacing-md: clamp(0.75rem, 3vw, 1.25rem);
+    --spacing-lg: clamp(1rem, 4vw, 1.5rem);
+    --spacing-xl: clamp(1.5rem, 5vw, 2.5rem);
+
+    --border-radius-sm: 0.25rem;
+    --border-radius-md: 0.5rem;
+    --border-radius-lg: 1rem;
+
+    --transition-default: all 0.25s ease-in-out;
+    --shadow-sm: 0 2px 4px rgba(0,0,0,0.05);
+    --shadow-md: 0 4px 8px rgba(0,0,0,0.08);
+    --shadow-lg: 0 8px 16px rgba(0,0,0,0.1);
+}
+
+/* -------------------- GLOBALS -------------------- */
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
+html {
+    scroll-behavior: smooth;
+    -webkit-text-size-adjust: 100%;
+    -webkit-tap-highlight-color: transparent;
+}
+
+body {
+    font-size: var(--font-size-body);
+    line-height: 1.5;
+    overflow-x: hidden;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+}
+
+img,
+picture,
+video,
+canvas,
+svg {
+    max-width: 100%;
+    height: auto;
+    display: block;
+}
+
+/* Amélioration des zones cliquables sur mobile (taille minimum 44px) */
+button,
+a,
+input[type="button"],
+input[type="submit"],
+.btn,
+[role="button"],
+.nav-link,
+.menu-item {
+    min-height: 44px;
+    min-width: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Suppression des scrollbars horizontales intempestives */
+.container,
+.row,
+[class*="col-"],
+.content-wrapper,
+.main-content {
+    max-width: 100%;
+    overflow-x: hidden;
+}
+
+/* Tableaux et iframes responsives */
+table,
+iframe,
+.video-container,
+.responsive-table {
+    width: 100%;
+    overflow-x: auto;
+    display: block;
+}
+
+table {
+    border-collapse: collapse;
+    border-spacing: 0;
+}
+
+/* Liens et transitions douces */
+a,
+button,
+.btn,
+.card,
+input,
+select,
+textarea {
+    transition: var(--transition-default);
+}
+
+/* Ombres légères premium */
+.card,
+.card-premium,
+.modal,
+.dropdown-menu {
+    box-shadow: var(--shadow-sm);
+}
+
+.card-premium:hover,
+.btn-premium:hover {
+    box-shadow: var(--shadow-md);
+}
+
+/* -------------------- TYPOGRAPHIE FLUIDE -------------------- */
+h1, .h1 {
+    font-size: var(--font-size-h1);
+    margin-bottom: var(--spacing-md);
+}
+h2, .h2 {
+    font-size: var(--font-size-h2);
+    margin-bottom: var(--spacing-sm);
+}
+h3, .h3 {
+    font-size: var(--font-size-h3);
+    margin-bottom: var(--spacing-sm);
+}
+p, .text-body {
+    font-size: var(--font-size-body);
+    margin-bottom: var(--spacing-md);
+}
+small, .text-small {
+    font-size: var(--font-size-small);
+}
+
+/* -------------------- GRILLES RESPONSIVES -------------------- */
+.grid-responsive {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: var(--spacing-lg);
+}
+
+/* Flexbox pour les listes */
+.flex-responsive {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--spacing-md);
+    align-items: center;
+    justify-content: flex-start;
+}
+
+/* Espacements adaptables */
+.section {
+    padding: var(--spacing-xl) var(--spacing-md);
+}
+.container-fluid {
+    padding-left: var(--spacing-md);
+    padding-right: var(--spacing-md);
+}
+
+/* -------------------- MOBILE FIRST (0 à 767px) -------------------- */
+/* Rien de spécial ici car tout est déjà mobile par défaut.
+   On va juste renforcer certains comportements tactiles et marges */
+@media (max-width: 767px) {
+    body {
+        -webkit-tap-highlight-color: rgba(0,0,0,0.05);
+    }
+
+    /* Réduction des paddings sur mobile */
+    .card-body-premium,
+    .content-wrapper,
+    .main-content {
+        padding-left: var(--spacing-sm);
+        padding-right: var(--spacing-sm);
+    }
+
+    /* Empilement des éléments flex sur mobile */
+    .flex-responsive {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    /* Boutons pleine largeur sur mobile (optionnel, mais souvent préférable) */
+    .btn-premium,
+    button[type="submit"],
+    .btn {
+        width: 100%;
+        margin-bottom: var(--spacing-sm);
+    }
+
+    /* Ajustement des modals et dropdowns pour qu'ils ne dépassent pas */
+    .modal-dialog {
+        margin: var(--spacing-md);
+        max-width: calc(100% - 2 * var(--spacing-md));
+    }
+}
+
+/* -------------------- TABLETTES (768px à 1023px) -------------------- */
+@media (min-width: 768px) and (max-width: 1023px) {
+    .grid-responsive {
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: var(--spacing-lg);
+    }
+
+    .flex-responsive {
+        flex-direction: row;
+        flex-wrap: wrap;
+    }
+
+    .btn-premium,
+    button[type="submit"] {
+        width: auto;
+        min-width: 120px;
+    }
+
+    /* Légère augmentation des marges */
+    .container-fluid {
+        padding-left: var(--spacing-lg);
+        padding-right: var(--spacing-lg);
+    }
+}
+
+/* -------------------- DESKTOP (≥1024px) -------------------- */
+@media (min-width: 1024px) {
+    .grid-responsive {
+        grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+        gap: var(--spacing-xl);
+    }
+
+    body {
+        font-size: clamp(1rem, 1vw, 1.125rem);
+    }
+
+    /* Centrage du contenu pour les grands écrans */
+    .container {
+        max-width: 1200px;
+        margin-left: auto;
+        margin-right: auto;
+    }
+}
+
+/* -------------------- GRANDS ÉCRANS (≥1440px) -------------------- */
+@media (min-width: 1440px) {
+    .container {
+        max-width: 1400px;
+    }
+
+    body {
+        font-size: 1.125rem;
+    }
+
+    .grid-responsive {
+        grid-template-columns: repeat(4, 1fr);
+    }
+
+    /* Limitation de la largeur des colonnes pour ne pas avoir des lignes trop longues */
+    .col-lg-4, .col-md-6 {
+        max-width: 380px;
+    }
+}
+
+/* -------------------- UTILITAIRES RESPONSIVES -------------------- */
+/* Masquer/afficher selon écran */
+.hide-on-mobile {
+    display: none;
+}
+@media (min-width: 768px) {
+    .hide-on-mobile {
+        display: block;
+    }
+    .show-on-mobile-only {
+        display: none;
+    }
+}
+@media (max-width: 767px) {
+    .show-on-mobile-only {
+        display: block;
+    }
+    .hide-on-desktop {
+        display: none;
+    }
+}
+
+/* Texte centré sur mobile, aligné sur desktop */
+@media (max-width: 767px) {
+    .text-center-mobile {
+        text-align: center;
+    }
+}
+
+/* Ajustement des images pour éviter les débordements */
+img.fluid {
+    width: 100%;
+    height: auto;
+    object-fit: cover;
+}
+
+/* Empêcher le défilement horizontal forcé */
+html, body {
+    overflow-x: hidden;
+    position: relative;
+}
+
+/* Bordures et ombres cohérentes */
+.card, .card-premium, .modal-content {
+    border-radius: var(--border-radius-md);
+    overflow: hidden;
+}
+
+.btn-premium, button, input, select, textarea {
+    border-radius: var(--border-radius-sm);
+}
+
+/* Amélioration du défilement tactile sur iOS */
+* {
+    -webkit-overflow-scrolling: touch;
+}
+
+/* Scrollbar personnalisée (optionnel, plus premium) */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 10px;
+}
+::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 10px;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+}

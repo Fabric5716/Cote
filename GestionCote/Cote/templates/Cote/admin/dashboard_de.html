@@ -1,0 +1,285 @@
+<!-- Cote/templates/Cote/admin/dashboard_de.html -->
+{% extends "Cote/admin/includes/head.html" %}
+{% load static %}
+
+{% block title %}Dashboard Administrateur | CS KABA{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{% static 'css/admin/dashboard_de.css' %}">
+{% endblock %}
+
+{% block body %}
+
+<div class="p-6">
+    <!-- Stats Cards -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-info">
+                <h3 class="stat-value" id="totalEleves">{{ total_eleves|default:0 }}</h3>
+                <p>Élèves inscrits</p>
+            </div>
+            <div class="stat-icon bg-blue-100 text-blue-600">
+                <i class="fas fa-users"></i>
+            </div>
+        </div>
+        
+        <div class="stat-card">
+            <div class="stat-info">
+                <h3 class="stat-value" id="totalEnseignants">{{ total_enseignants|default:0 }}</h3>
+                <p>Enseignants</p>
+            </div>
+            <div class="stat-icon bg-green-100 text-green-600">
+                <i class="fas fa-chalkboard-user"></i>
+            </div>
+        </div>
+        
+        <div class="stat-card">
+            <div class="stat-info">
+                <h3 class="stat-value" id="totalClasses">{{ total_classes|default:0 }}</h3>
+                <p>Classes</p>
+            </div>
+            <div class="stat-icon bg-yellow-100 text-yellow-600">
+                <i class="fas fa-book"></i>
+            </div>
+        </div>
+        
+        <div class="stat-card">
+            <div class="stat-info">
+                <h3 class="stat-value" id="tauxReussite">{{ taux_reussite|default:0 }}%</h3>
+                <p>Taux de réussite (%)</p>
+            </div>
+            <div class="stat-icon bg-purple-100 text-purple-600">
+                <i class="fas fa-chart-line"></i>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Section -->
+    <div class="charts-section">
+        <div class="chart-card">
+            <div class="chart-header">
+                <h3><i class="fas fa-chart-line"></i> Évolution des inscriptions</h3>
+                <span class="chart-period">{{ annee_min }} - {{ annee_max }}</span>
+            </div>
+            <div class="chart-body">
+                <canvas id="inscriptionChart" height="200"></canvas>
+            </div>
+        </div>
+        
+        <div class="chart-card">
+            <div class="chart-header">
+                <h3><i class="fas fa-chart-pie"></i> Répartition par classe</h3>
+                <span class="chart-period">Année en cours</span>
+            </div>
+            <div class="chart-body">
+                <canvas id="classeChart" height="200"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Top Students Section -->
+    <div class="top-students-section">
+        <div class="section-header-custom">
+            <div class="header-left">
+                <i class="fas fa-crown"></i>
+                <h3>Classement d'excellence</h3>
+                <span class="badge">Top 10</span>
+            </div>
+            <div class="header-right">
+                <button class="refresh-btn" onclick="refreshTopStudents()" title="Actualiser">
+                    <i class="fas fa-sync-alt"></i>
+                </button>
+            </div>
+        </div>
+        
+        <div class="table-container">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Rang</th>
+                        <th>Matricule</th>
+                        <th>Nom complet</th>
+                        <th>Classe</th>
+                        <th>Moyenne</th>
+                        <th>Mention</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if top_eleves %}
+                        {% for eleve in top_eleves %}
+                        <tr class="rank-{{ forloop.counter }}">
+                            <td class="rank-cell">
+                                {% if forloop.counter == 1 %}
+                                    <div class="medal gold">🥇</div>
+                                {% elif forloop.counter == 2 %}
+                                    <div class="medal silver">🥈</div>
+                                {% elif forloop.counter == 3 %}
+                                    <div class="medal bronze">🥉</div>
+                                {% else %}
+                                    <div class="rank-number">{{ forloop.counter }}</div>
+                                {% endif %}
+                            </td>
+                            <td>{{ eleve.matricule|default:'-' }}</td>
+                            <td><strong>{{ eleve.nom|default:'' }} {{ eleve.prenom|default:'' }}</strong></td>
+                            <td><span class="classe-tag">{{ eleve.classe|default:'-' }}</span></td>
+                            <td class="score-cell">
+                                <span class="score-value {% if eleve.moyenne >= 16 %}excellent{% elif eleve.moyenne >= 14 %}very-good{% elif eleve.moyenne >= 12 %}good{% elif eleve.moyenne >= 10 %}average{% else %}poor{% endif %}">
+                                    {{ eleve.moyenne|default:'0' }}/20
+                                </span>
+                            </td>
+                            <td>
+                                <span class="mention-badge {{ eleve.mention|default:'En cours'|lower|cut:' ' }}">
+                                    {{ eleve.mention|default:'En cours' }}
+                                </span>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr class="empty-row">
+                            <td colspan="6">
+                                <div class="empty-state">
+                                    <i class="fas fa-graduation-cap"></i>
+                                    <p>Aucun élève disponible</p>
+                                    <button onclick="window.location.href='{% url 'ajouter_eleve_page' %}'" class="empty-action-btn">
+                                        <i class="fas fa-plus"></i> Ajouter un élève
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Quick Actions Section -->
+    <div class="quick-actions-section">
+        <div class="actions-grid">
+            <div class="action-card" data-action="pdf">
+                <div class="action-icon-wrapper">
+                    <i class="fas fa-file-pdf"></i>
+                </div>
+                <div class="action-content">
+                    <h4>Archives des bulletins</h4>
+                    <p>Exportez et archivez les bulletins scolaires</p>
+                    <button onclick="exportPDF()" class="action-btn pdf-btn">
+                        <i class="fas fa-download"></i> Exporter PDF
+                    </button>
+                </div>
+            </div>
+            
+            <div class="action-card" data-action="palmares">
+                <div class="action-icon-wrapper">
+                    <i class="fas fa-trophy"></i>
+                </div>
+                <div class="action-content">
+                    <h4>Palmarès</h4>
+                    <p>Générez le palmarès de l'année scolaire</p>
+                    <button onclick="genererPalmares()" class="action-btn palmares-btn">
+                        <i class="fas fa-chart-line"></i> Générer
+                    </button>
+                </div>
+            </div>
+            
+            <div class="action-card" data-action="excel">
+                <div class="action-icon-wrapper">
+                    <i class="fas fa-file-excel"></i>
+                </div>
+                <div class="action-content">
+                    <h4>Rapports Excel</h4>
+                    <p>Exportez les rapports statistiques</p>
+                    <button onclick="exportExcel()" class="action-btn excel-btn">
+                        <i class="fas fa-download"></i> Exporter Excel
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Variables globales pour les graphiques
+    let inscriptionChart = null;
+    let classeChart = null;
+
+    // Initialiser les graphiques avec les données réelles
+    function initCharts() {
+        // Graphique d'évolution des inscriptions (données réelles par année)
+        var ctx1 = document.getElementById('inscriptionChart');
+        if (ctx1 && typeof Chart !== 'undefined') {
+            if (inscriptionChart) inscriptionChart.destroy();
+            inscriptionChart = new Chart(ctx1.getContext('2d'), {
+                type: 'line',
+                data: {
+                    labels: {{ evo_labels|safe }},
+                    datasets: [{
+                        label: "Nombre d'inscriptions",
+                        data: {{ evo_data|safe }},
+                        borderColor: '#1e3c72',
+                        backgroundColor: 'rgba(30,60,114,0.05)',
+                        borderWidth: 2,
+                        pointBackgroundColor: '#1e3c72',
+                        pointBorderColor: '#fff',
+                        pointRadius: 4,
+                        pointHoverRadius: 6,
+                        tension: 0.4,
+                        fill: true
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: {
+                        legend: { position: 'bottom' },
+                        tooltip: { mode: 'index', intersect: false }
+                    }
+                }
+            });
+        }
+
+        // Graphique de répartition par classe (données réelles)
+        var ctx2 = document.getElementById('classeChart');
+        if (ctx2 && typeof Chart !== 'undefined') {
+            if (classeChart) classeChart.destroy();
+            classeChart = new Chart(ctx2.getContext('2d'), {
+                type: 'doughnut',
+                data: {
+                    labels: {{ repartition_labels|safe }},
+                    datasets: [{
+                        data: {{ repartition_data|safe }},
+                        backgroundColor: {{ repartition_colors|safe }},
+                        borderWidth: 0,
+                        hoverOffset: 10
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: true,
+                    plugins: {
+                        legend: { position: 'bottom' },
+                        tooltip: { 
+                            callbacks: { 
+                                label: function(context) { 
+                                    return context.label + ': ' + context.raw + ' élèves'; 
+                                } 
+                            }
+                        }
+                    }
+                }
+            });
+        }
+    }
+
+    function refreshTopStudents() {
+        location.reload();
+    }
+
+    // Initialisation au chargement
+    document.addEventListener('DOMContentLoaded', function() {
+        initCharts();
+    });
+</script>
+
+<script src="{% static 'js/admin/dashboard_de.js' %}"></script>
+
+{% endblock %}

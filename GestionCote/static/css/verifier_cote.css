@@ -1,0 +1,1507 @@
+/* ============================================================
+   FICHIER : verifier_cote.css (version unifiée + mode sombre)
+   DESCRIPTION : Styles pour la page de vérification des cotes
+   (titulaire) – Élèves, cotes par période, validation.
+   ============================================================ */
+
+/* ------------------------------------------------------------
+   1. VARIABLES CSS (Thème personnalisable)
+   ------------------------------------------------------------ */
+:root {
+    /* Couleurs principales */
+    --primary-dark: #0f2b4f;
+    --primary: #1e3c72;
+    --primary-light: #2a5298;
+    --secondary: #e9ecef;
+    --success: #28a745;
+    --success-light: #d4edda;
+    --warning: #ffc107;
+    --danger: #dc3545;
+    --info: #17a2b8;
+    
+    /* Couleurs de texte */
+    --text-dark: #212529;
+    --text-muted: #6c757d;
+    --text-light: #f8f9fa;
+    --text-white: #ffffff;
+    --text-header: #1e293b;
+    
+    /* Couleurs de fond (thème clair) */
+    --bg-light: #f8f9fc;
+    --bg-white: #ffffff;
+    --bg-table-header: #1e3c72;
+    --bg-table-row-alt: #f9fafb;
+    --bg-total: #fef9e3;
+    --bg-percentage: #e8f5e9;
+    --bg-validated: #d4edda;
+    --border-color: #dee2e6;
+    
+    /* Ombres et bordures */
+    --border-radius-sm: 0.25rem;
+    --border-radius-md: 0.5rem;
+    --border-radius-lg: 0.75rem;
+    --box-shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
+    --box-shadow-md: 0 4px 6px rgba(0,0,0,0.1);
+    --box-shadow-lg: 0 10px 15px rgba(0,0,0,0.1);
+    
+    /* Espacements */
+    --spacing-xs: 0.25rem;
+    --spacing-sm: 0.5rem;
+    --spacing-md: 1rem;
+    --spacing-lg: 1.5rem;
+    --spacing-xl: 2rem;
+    
+    /* Transitions */
+    --transition-fast: 0.15s ease;
+    --transition-normal: 0.25s ease;
+    --transition-slow: 0.4s ease;
+    
+    /* Police */
+    --font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+}
+
+/* ------------------------------------------------------------
+   2. VARIABLES MODE SOMBRE
+   ------------------------------------------------------------ */
+[data-theme="dark"] {
+    --primary: #3b82f6;
+    --primary-dark: #2563eb;
+    --primary-light: #60a5fa;
+    --secondary: #334155;
+    --success: #10b981;
+    --warning: #f59e0b;
+    --danger: #ef4444;
+    --info: #3b82f6;
+    
+    --text-dark: #f1f5f9;
+    --text-muted: #94a3b8;
+    --text-light: #0f172a;
+    --text-header: #e2e8f0;
+    
+    --bg-light: #1e293b;
+    --bg-white: #1e293b;
+    --bg-table-header: #0f2b4f;
+    --bg-table-row-alt: #334155;
+    --bg-total: #2d3748;
+    --bg-percentage: #1e3a2f;
+    --bg-validated: #1a3a2a;
+    --border-color: #334155;
+}
+
+/* ------------------------------------------------------------
+   3. RESET & BASE
+   ------------------------------------------------------------ */
+*,
+*::before,
+*::after {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: var(--font-family);
+    font-size: 0.9rem;
+    line-height: 1.5;
+    color: var(--text-dark);
+    background-color: var(--bg-light);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+/* Conteneur principal de la page */
+.container {
+    max-width: 1400px;
+    margin-left: auto;
+    margin-right: auto;
+    padding-left: var(--spacing-lg);
+    padding-right: var(--spacing-lg);
+}
+
+/* Cartes */
+.card {
+    background: var(--bg-white);
+    border-radius: var(--border-radius-lg);
+    box-shadow: var(--box-shadow-sm);
+    border: 1px solid var(--border-color);
+    overflow: hidden;
+    margin-bottom: var(--spacing-lg);
+    transition: box-shadow var(--transition-normal);
+}
+
+.card:hover {
+    box-shadow: var(--box-shadow-md);
+}
+
+.card-body {
+    padding: var(--spacing-lg);
+}
+
+.card-header {
+    background-color: var(--bg-light);
+    border-bottom: 1px solid var(--border-color);
+    padding: var(--spacing-md) var(--spacing-lg);
+    font-weight: 600;
+    font-size: 1.1rem;
+}
+
+/* ------------------------------------------------------------
+   4. ZONE D'INFORMATION (Année, Classe)
+   ------------------------------------------------------------ */
+.info-banner {
+    background: var(--bg-white);
+    border-radius: var(--border-radius-md);
+    padding: var(--spacing-md) var(--spacing-lg);
+    margin-bottom: var(--spacing-lg);
+    border-left: 4px solid var(--primary);
+    box-shadow: var(--box-shadow-sm);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: var(--spacing-md);
+}
+.info-item {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+    font-size: 0.9rem;
+}
+.info-item i {
+    color: var(--primary);
+    width: 1.25rem;
+}
+.info-item strong {
+    color: var(--primary-dark);
+}
+
+/* ------------------------------------------------------------
+   5. TABLEAU DES COTES (Version détaillée)
+   ------------------------------------------------------------ */
+.table-responsive {
+    overflow-x: auto;
+    margin-top: var(--spacing-md);
+    border-radius: var(--border-radius-md);
+    border: 1px solid var(--border-color);
+    background: var(--bg-white);
+}
+
+.cotes-table,
+.detail-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.85rem;
+    min-width: 1000px;
+}
+
+.cotes-table th,
+.cotes-table td,
+.detail-table th,
+.detail-table td {
+    border: 1px solid var(--border-color);
+    padding: 10px 12px;
+    vertical-align: middle;
+    text-align: center;
+}
+
+/* En-têtes du tableau – TEXTE CONTRASTÉ */
+.cotes-table th,
+.detail-table th {
+    background-color: var(--bg-table-header);
+    color: var(--text-header);
+    font-weight: 600;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    white-space: nowrap;
+}
+
+/* En-têtes des colonnes de cours (fusionnées) */
+.detail-table th[colspan] {
+    background-color: var(--primary-light);
+    text-align: center;
+    font-size: 0.9rem;
+    text-transform: none;
+    color: var(--text-header);
+}
+
+/* Lignes alternées */
+.cotes-table tbody tr:nth-child(even),
+.detail-table tbody tr:nth-child(even) {
+    background-color: var(--bg-table-row-alt);
+}
+
+/* Première colonne (Élève) */
+.eleve-row td:first-child,
+.cotes-table td:first-child,
+.detail-table td:first-child {
+    font-weight: 600;
+    background-color: var(--bg-light);
+    text-align: left;
+    position: sticky;
+    left: 0;
+    z-index: 5;
+    box-shadow: 2px 0 5px rgba(0,0,0,0.05);
+}
+
+/* Cellules de cotes normales */
+.cote-cell {
+    background-color: var(--bg-white);
+    transition: background-color var(--transition-fast);
+}
+
+.cote-cell.validated {
+    background-color: var(--bg-validated);
+}
+
+/* Cellules total (S1, S2, Total général) */
+.total-cell {
+    background-color: var(--bg-total);
+    font-weight: 600;
+    color: var(--text-dark);
+}
+
+/* Cellule pourcentage */
+.pourcentage-cell {
+    background-color: var(--bg-percentage);
+    font-weight: 600;
+    color: var(--text-dark);
+}
+
+/* Cellule validation */
+.validation-cell {
+    text-align: center;
+    vertical-align: middle;
+}
+
+/* ------------------------------------------------------------
+   6. BOUTONS DE VALIDATION
+   ------------------------------------------------------------ */
+.btn-valider {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 1.4rem;
+    padding: 4px 8px;
+    border-radius: 50%;
+    transition: all var(--transition-fast);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.btn-valider i {
+    color: var(--text-muted);
+    transition: color var(--transition-fast), transform var(--transition-fast);
+}
+
+.btn-valider:hover i {
+    color: var(--primary);
+    transform: scale(1.1);
+}
+
+.btn-valider i.validated {
+    color: var(--success);
+}
+
+.btn-valider:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.btn-valider:disabled:hover i {
+    transform: none;
+    color: var(--text-muted);
+}
+
+/* ------------------------------------------------------------
+   7. FORMULAIRES & SÉLECTEURS
+   ------------------------------------------------------------ */
+.form-label {
+    display: block;
+    margin-bottom: var(--spacing-xs);
+    font-weight: 600;
+    color: var(--text-dark);
+}
+
+.form-select,
+.form-control {
+    width: 100%;
+    padding: 10px 12px;
+    font-size: 0.9rem;
+    font-family: var(--font-family);
+    border: 1px solid var(--border-color);
+    border-radius: var(--border-radius-md);
+    background-color: var(--bg-white);
+    color: var(--text-dark);
+    transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+
+.form-select:focus,
+.form-control:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(30,60,114,0.1);
+}
+
+/* Badges */
+.badge {
+    display: inline-block;
+    padding: 0.35em 0.65em;
+    font-size: 0.75em;
+    font-weight: 600;
+    line-height: 1;
+    text-align: center;
+    white-space: nowrap;
+    vertical-align: baseline;
+    border-radius: var(--border-radius-sm);
+    background-color: var(--primary);
+    color: var(--text-white);
+}
+
+.badge-primary {
+    background-color: var(--primary);
+}
+
+.badge-success {
+    background-color: var(--success);
+}
+
+/* Alertes */
+.alert {
+    padding: var(--spacing-md) var(--spacing-lg);
+    margin-bottom: var(--spacing-lg);
+    border-radius: var(--border-radius-md);
+    border-left: 4px solid transparent;
+}
+
+.alert-info {
+    background-color: #d1ecf1;
+    border-left-color: var(--info);
+    color: #0c5460;
+}
+
+.alert-warning {
+    background-color: #fff3cd;
+    border-left-color: var(--warning);
+    color: #856404;
+}
+
+.alert-danger {
+    background-color: #f8d7da;
+    border-left-color: var(--danger);
+    color: #721c24;
+}
+
+/* Spinner de chargement */
+.loading-spinner {
+    text-align: center;
+    padding: var(--spacing-xl);
+    color: var(--primary);
+}
+.loading-spinner i {
+    font-size: 2rem;
+    margin-bottom: var(--spacing-sm);
+}
+
+/* ------------------------------------------------------------
+   8. EN-TÊTE DE PAGE (Titre + Badge) – déjà dans le template
+   ------------------------------------------------------------ */
+/* Les styles pour .page-header sont optionnels ici, on peut les garder */
+.page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: var(--spacing-lg);
+    flex-wrap: wrap;
+    gap: var(--spacing-md);
+}
+.page-header h1 {
+    font-size: 1.8rem;
+    font-weight: 600;
+    color: var(--primary-dark);
+    margin: 0;
+}
+.page-header h1 i {
+    margin-right: var(--spacing-sm);
+    color: var(--primary);
+}
+
+/* ------------------------------------------------------------
+   9. MESSAGES D'ÉTAT
+   ------------------------------------------------------------ */
+.empty-state {
+    text-align: center;
+    padding: var(--spacing-xl);
+    color: var(--text-muted);
+}
+.empty-state i {
+    font-size: 3rem;
+    margin-bottom: var(--spacing-md);
+    opacity: 0.5;
+}
+
+/* ------------------------------------------------------------
+   10. RESPONSIVE DESIGN
+   ------------------------------------------------------------ */
+@media (max-width: 1024px) {
+    .container {
+        padding-left: var(--spacing-md);
+        padding-right: var(--spacing-md);
+    }
+    .cotes-table,
+    .detail-table {
+        font-size: 0.75rem;
+    }
+    .cotes-table th,
+    .cotes-table td,
+    .detail-table th,
+    .detail-table td {
+        padding: 6px 8px;
+    }
+    .btn-valider {
+        font-size: 1.1rem;
+    }
+}
+
+@media (max-width: 768px) {
+    .page-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    .page-header h1 {
+        font-size: 1.4rem;
+    }
+    .card-body {
+        padding: var(--spacing-md);
+    }
+    .info-banner {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    .table-responsive {
+        overflow-x: scroll;
+        -webkit-overflow-scrolling: touch;
+    }
+}
+
+@media (max-width: 480px) {
+    .container {
+        padding-left: var(--spacing-sm);
+        padding-right: var(--spacing-sm);
+    }
+    .badge {
+        font-size: 0.65rem;
+    }
+}
+
+/* ------------------------------------------------------------
+   11. ANIMATIONS & TRANSITIONS
+   ------------------------------------------------------------ */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+}
+.cotes-table tbody tr,
+.detail-table tbody tr {
+    animation: fadeIn 0.3s ease-out;
+}
+.btn-valider:active i {
+    animation: pulse 0.2s ease-in-out;
+}
+.cote-cell,
+.total-cell,
+.pourcentage-cell {
+    transition: background-color 0.2s, transform 0.1s;
+}
+
+/* ------------------------------------------------------------
+   12. STYLES POUR LES OUTILS (Tooltips)
+   ------------------------------------------------------------ */
+[data-tooltip] {
+    position: relative;
+    cursor: help;
+}
+[data-tooltip]::before {
+    content: attr(data-tooltip);
+    position: absolute;
+    bottom: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: var(--primary-dark);
+    color: var(--text-white);
+    padding: 4px 8px;
+    border-radius: var(--border-radius-sm);
+    font-size: 0.7rem;
+    white-space: nowrap;
+    z-index: 20;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity var(--transition-fast);
+}
+[data-tooltip]:hover::before {
+    opacity: 1;
+}
+
+/* ------------------------------------------------------------
+   13. STYLES POUR LES MODALES
+   ------------------------------------------------------------ */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1050;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity var(--transition-normal), visibility var(--transition-normal);
+}
+.modal-overlay.active {
+    opacity: 1;
+    visibility: visible;
+}
+.modal-container {
+    background-color: var(--bg-white);
+    border-radius: var(--border-radius-lg);
+    width: 90%;
+    max-width: 500px;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: var(--box-shadow-lg);
+    animation: fadeIn 0.3s ease;
+}
+.modal-header {
+    padding: var(--spacing-md) var(--spacing-lg);
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.modal-header h3 {
+    margin: 0;
+    font-size: 1.25rem;
+    color: var(--primary);
+}
+.modal-close {
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+    color: var(--text-muted);
+    transition: color var(--transition-fast);
+}
+.modal-close:hover {
+    color: var(--danger);
+}
+.modal-body {
+    padding: var(--spacing-lg);
+}
+.modal-footer {
+    padding: var(--spacing-md) var(--spacing-lg);
+    border-top: 1px solid var(--border-color);
+    display: flex;
+    justify-content: flex-end;
+    gap: var(--spacing-sm);
+}
+
+/* ------------------------------------------------------------
+   14. STYLES POUR L'IMPRESSION
+   ------------------------------------------------------------ */
+@media print {
+    body {
+        background-color: white;
+        font-size: 12pt;
+    }
+    .sidebar,
+    .topbar,
+    .btn-valider,
+    .badge,
+    .no-print,
+    .card:first-of-type,
+    .form-select,
+    .form-label,
+    .btn,
+    #anneeSelect,
+    #classeInfo,
+    .dropdown-menu,
+    .hamburger,
+    .user-dropdown,
+    .date-time,
+    .notification-btn,
+    .logout-btn {
+        display: none !important;
+    }
+    .main-content {
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+    .info-banner {
+        display: flex !important;
+        border: 1px solid #ccc;
+        background: white;
+        margin-bottom: 15pt;
+        padding: 8pt;
+    }
+    .cotes-table,
+    .detail-table {
+        border: 1px solid #ccc;
+        width: 100%;
+    }
+    .cotes-table th,
+    .detail-table th {
+        background-color: #eee !important;
+        color: black !important;
+        print-color-adjust: exact;
+    }
+    .total-cell,
+    .pourcentage-cell {
+        background-color: #f0f0f0 !important;
+        print-color-adjust: exact;
+    }
+}
+
+/* ------------------------------------------------------------
+   15. BARRE DE DÉFILEMENT
+   ------------------------------------------------------------ */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+::-webkit-scrollbar-track {
+    background: var(--secondary);
+    border-radius: 10px;
+}
+::-webkit-scrollbar-thumb {
+    background: var(--primary-light);
+    border-radius: 10px;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: var(--primary);
+}
+
+/* ------------------------------------------------------------
+   16. UTILITAIRES
+   ------------------------------------------------------------ */
+.text-center { text-align: center; }
+.text-left { text-align: left; }
+.text-right { text-align: right; }
+.text-muted { color: var(--text-muted); }
+.text-success { color: var(--success); }
+.text-danger { color: var(--danger); }
+.text-primary { color: var(--primary); }
+
+.mt-1 { margin-top: var(--spacing-xs); }
+.mt-2 { margin-top: var(--spacing-sm); }
+.mt-3 { margin-top: var(--spacing-md); }
+.mt-4 { margin-top: var(--spacing-lg); }
+.mt-5 { margin-top: var(--spacing-xl); }
+.mb-1 { margin-bottom: var(--spacing-xs); }
+.mb-2 { margin-bottom: var(--spacing-sm); }
+.mb-3 { margin-bottom: var(--spacing-md); }
+.mb-4 { margin-bottom: var(--spacing-lg); }
+.mb-5 { margin-bottom: var(--spacing-xl); }
+.p-1 { padding: var(--spacing-xs); }
+.p-2 { padding: var(--spacing-sm); }
+.p-3 { padding: var(--spacing-md); }
+.p-4 { padding: var(--spacing-lg); }
+.p-5 { padding: var(--spacing-xl); }
+
+.d-flex { display: flex; }
+.justify-content-between { justify-content: space-between; }
+.align-items-center { align-items: center; }
+.gap-2 { gap: var(--spacing-sm); }
+
+/* ------------------------------------------------------------
+   17. OVERRIDES POUR LE TABLEAU DÉTAILLÉ
+   ------------------------------------------------------------ */
+.detail-table .total-cell {
+    background-color: var(--bg-total);
+    font-weight: 600;
+}
+.detail-table .pourcentage-cell {
+    background-color: var(--bg-percentage);
+    font-weight: 600;
+}
+.detail-table .validation-cell button {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 1.2rem;
+}
+.detail-table td[colspan] {
+    background-color: var(--bg-light);
+    color: var(--text-muted);
+    font-style: italic;
+}
+
+/* ------------------------------------------------------------
+   18. STYLES SUPPLÉMENTAIRES POUR LA LISIBILITÉ (contraste)
+   ------------------------------------------------------------ */
+.badge-primary,
+.badge-success,
+.badge-warning,
+.badge-danger {
+    color: white;
+}
+.total-cell {
+    color: #5d3e00;
+}
+.pourcentage-cell {
+    color: #0b5e1e;
+}
+[data-theme="dark"] .total-cell {
+    color: #fbbf24;
+}
+[data-theme="dark"] .pourcentage-cell {
+    color: #4ade80;
+}
+.btn-valider i.validated {
+    filter: drop-shadow(0 0 2px rgba(40,167,69,0.3));
+}
+.cotes-table tbody tr:hover,
+.detail-table tbody tr:hover {
+    background-color: rgba(30,60,114,0.05);
+    transition: background-color var(--transition-fast);
+}
+[data-theme="dark"] .cotes-table tbody tr:hover,
+[data-theme="dark"] .detail-table tbody tr:hover {
+    background-color: rgba(59,130,246,0.1);
+}
+.classe-info {
+    font-weight: 500;
+    color: var(--primary-dark);
+}
+.info-banner .classe-info {
+    background: var(--primary-light);
+    opacity: 0.8;
+    padding: 4px 12px;
+    border-radius: 20px;
+}
+[data-theme="dark"] .info-banner .classe-info {
+    background: var(--primary-dark);
+    color: white;
+}
+
+/* ------------------------------------------------------------
+   19. FIN DU FICHIER CSS
+   ------------------------------------------------------------ */
+   /* ============================================
+   RESPONSIVE DESIGN PREMIUM - MOBILE FIRST
+   Ajoutez ce bloc à la fin de votre fichier CSS
+   pour garantir une expérience fluide sur tous les appareils.
+   ============================================ */
+
+/* -------------------- VARIABLES -------------------- */
+:root {
+    --breakpoint-mobile: 767px;
+    --breakpoint-tablette: 768px;
+    --breakpoint-desktop: 1024px;
+    --breakpoint-large: 1440px;
+
+    --font-size-base: calc(16px + 0.2vw);
+    --font-size-h1: clamp(1.8rem, 5vw, 2.5rem);
+    --font-size-h2: clamp(1.5rem, 4vw, 2rem);
+    --font-size-h3: clamp(1.25rem, 3vw, 1.75rem);
+    --font-size-body: clamp(0.95rem, 2vw, 1rem);
+    --font-size-small: clamp(0.8rem, 1.5vw, 0.9rem);
+
+    --spacing-xs: clamp(0.25rem, 1vw, 0.5rem);
+    --spacing-sm: clamp(0.5rem, 2vw, 0.75rem);
+    --spacing-md: clamp(0.75rem, 3vw, 1.25rem);
+    --spacing-lg: clamp(1rem, 4vw, 1.5rem);
+    --spacing-xl: clamp(1.5rem, 5vw, 2.5rem);
+
+    --border-radius-sm: 0.25rem;
+    --border-radius-md: 0.5rem;
+    --border-radius-lg: 1rem;
+
+    --transition-default: all 0.25s ease-in-out;
+    --shadow-sm: 0 2px 4px rgba(0,0,0,0.05);
+    --shadow-md: 0 4px 8px rgba(0,0,0,0.08);
+    --shadow-lg: 0 8px 16px rgba(0,0,0,0.1);
+}
+
+/* -------------------- GLOBALS -------------------- */
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
+html {
+    scroll-behavior: smooth;
+    -webkit-text-size-adjust: 100%;
+    -webkit-tap-highlight-color: transparent;
+}
+
+body {
+    font-size: var(--font-size-body);
+    line-height: 1.5;
+    overflow-x: hidden;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+}
+
+img,
+picture,
+video,
+canvas,
+svg {
+    max-width: 100%;
+    height: auto;
+    display: block;
+}
+
+/* Amélioration des zones cliquables sur mobile (taille minimum 44px) */
+button,
+a,
+input[type="button"],
+input[type="submit"],
+.btn,
+[role="button"],
+.nav-link,
+.menu-item {
+    min-height: 44px;
+    min-width: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Suppression des scrollbars horizontales intempestives */
+.container,
+.row,
+[class*="col-"],
+.content-wrapper,
+.main-content {
+    max-width: 100%;
+    overflow-x: hidden;
+}
+
+/* Tableaux et iframes responsives */
+table,
+iframe,
+.video-container,
+.responsive-table {
+    width: 100%;
+    overflow-x: auto;
+    display: block;
+}
+
+table {
+    border-collapse: collapse;
+    border-spacing: 0;
+}
+
+/* Liens et transitions douces */
+a,
+button,
+.btn,
+.card,
+input,
+select,
+textarea {
+    transition: var(--transition-default);
+}
+
+/* Ombres légères premium */
+.card,
+.card-premium,
+.modal,
+.dropdown-menu {
+    box-shadow: var(--shadow-sm);
+}
+
+.card-premium:hover,
+.btn-premium:hover {
+    box-shadow: var(--shadow-md);
+}
+
+/* -------------------- TYPOGRAPHIE FLUIDE -------------------- */
+h1, .h1 {
+    font-size: var(--font-size-h1);
+    margin-bottom: var(--spacing-md);
+}
+h2, .h2 {
+    font-size: var(--font-size-h2);
+    margin-bottom: var(--spacing-sm);
+}
+h3, .h3 {
+    font-size: var(--font-size-h3);
+    margin-bottom: var(--spacing-sm);
+}
+p, .text-body {
+    font-size: var(--font-size-body);
+    margin-bottom: var(--spacing-md);
+}
+small, .text-small {
+    font-size: var(--font-size-small);
+}
+
+/* -------------------- GRILLES RESPONSIVES -------------------- */
+.grid-responsive {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: var(--spacing-lg);
+}
+
+/* Flexbox pour les listes */
+.flex-responsive {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--spacing-md);
+    align-items: center;
+    justify-content: flex-start;
+}
+
+/* Espacements adaptables */
+.section {
+    padding: var(--spacing-xl) var(--spacing-md);
+}
+.container-fluid {
+    padding-left: var(--spacing-md);
+    padding-right: var(--spacing-md);
+}
+
+/* -------------------- MOBILE FIRST (0 à 767px) -------------------- */
+/* Rien de spécial ici car tout est déjà mobile par défaut.
+   On va juste renforcer certains comportements tactiles et marges */
+@media (max-width: 767px) {
+    body {
+        -webkit-tap-highlight-color: rgba(0,0,0,0.05);
+    }
+
+    /* Réduction des paddings sur mobile */
+    .card-body-premium,
+    .content-wrapper,
+    .main-content {
+        padding-left: var(--spacing-sm);
+        padding-right: var(--spacing-sm);
+    }
+
+    /* Empilement des éléments flex sur mobile */
+    .flex-responsive {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    /* Boutons pleine largeur sur mobile (optionnel, mais souvent préférable) */
+    .btn-premium,
+    button[type="submit"],
+    .btn {
+        width: 100%;
+        margin-bottom: var(--spacing-sm);
+    }
+
+    /* Ajustement des modals et dropdowns pour qu'ils ne dépassent pas */
+    .modal-dialog {
+        margin: var(--spacing-md);
+        max-width: calc(100% - 2 * var(--spacing-md));
+    }
+}
+
+/* -------------------- TABLETTES (768px à 1023px) -------------------- */
+@media (min-width: 768px) and (max-width: 1023px) {
+    .grid-responsive {
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: var(--spacing-lg);
+    }
+
+    .flex-responsive {
+        flex-direction: row;
+        flex-wrap: wrap;
+    }
+
+    .btn-premium,
+    button[type="submit"] {
+        width: auto;
+        min-width: 120px;
+    }
+
+    /* Légère augmentation des marges */
+    .container-fluid {
+        padding-left: var(--spacing-lg);
+        padding-right: var(--spacing-lg);
+    }
+}
+
+/* -------------------- DESKTOP (≥1024px) -------------------- */
+@media (min-width: 1024px) {
+    .grid-responsive {
+        grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+        gap: var(--spacing-xl);
+    }
+
+    body {
+        font-size: clamp(1rem, 1vw, 1.125rem);
+    }
+
+    /* Centrage du contenu pour les grands écrans */
+    .container {
+        max-width: 1200px;
+        margin-left: auto;
+        margin-right: auto;
+    }
+}
+
+/* -------------------- GRANDS ÉCRANS (≥1440px) -------------------- */
+@media (min-width: 1440px) {
+    .container {
+        max-width: 1400px;
+    }
+
+    body {
+        font-size: 1.125rem;
+    }
+
+    .grid-responsive {
+        grid-template-columns: repeat(4, 1fr);
+    }
+
+    /* Limitation de la largeur des colonnes pour ne pas avoir des lignes trop longues */
+    .col-lg-4, .col-md-6 {
+        max-width: 380px;
+    }
+}
+
+/* -------------------- UTILITAIRES RESPONSIVES -------------------- */
+/* Masquer/afficher selon écran */
+.hide-on-mobile {
+    display: none;
+}
+@media (min-width: 768px) {
+    .hide-on-mobile {
+        display: block;
+    }
+    .show-on-mobile-only {
+        display: none;
+    }
+}
+@media (max-width: 767px) {
+    .show-on-mobile-only {
+        display: block;
+    }
+    .hide-on-desktop {
+        display: none;
+    }
+}
+
+/* Texte centré sur mobile, aligné sur desktop */
+@media (max-width: 767px) {
+    .text-center-mobile {
+        text-align: center;
+    }
+}
+
+/* Ajustement des images pour éviter les débordements */
+img.fluid {
+    width: 100%;
+    height: auto;
+    object-fit: cover;
+}
+
+/* Empêcher le défilement horizontal forcé */
+html, body {
+    overflow-x: hidden;
+    position: relative;
+}
+
+/* Bordures et ombres cohérentes */
+.card, .card-premium, .modal-content {
+    border-radius: var(--border-radius-md);
+    overflow: hidden;
+}
+
+.btn-premium, button, input, select, textarea {
+    border-radius: var(--border-radius-sm);
+}
+
+/* Amélioration du défilement tactile sur iOS */
+* {
+    -webkit-overflow-scrolling: touch;
+}
+
+/* Scrollbar personnalisée (optionnel, plus premium) */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 10px;
+}
+::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 10px;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+}
+/* ============================================
+   RESPONSIVE DESIGN PREMIUM - MOBILE FIRST
+   Ajoutez ce bloc à la fin de votre fichier CSS
+   pour garantir une expérience fluide sur tous les appareils.
+   ============================================ */
+
+/* -------------------- VARIABLES -------------------- */
+:root {
+    --breakpoint-mobile: 767px;
+    --breakpoint-tablette: 768px;
+    --breakpoint-desktop: 1024px;
+    --breakpoint-large: 1440px;
+
+    --font-size-base: calc(16px + 0.2vw);
+    --font-size-h1: clamp(1.8rem, 5vw, 2.5rem);
+    --font-size-h2: clamp(1.5rem, 4vw, 2rem);
+    --font-size-h3: clamp(1.25rem, 3vw, 1.75rem);
+    --font-size-body: clamp(0.95rem, 2vw, 1rem);
+    --font-size-small: clamp(0.8rem, 1.5vw, 0.9rem);
+
+    --spacing-xs: clamp(0.25rem, 1vw, 0.5rem);
+    --spacing-sm: clamp(0.5rem, 2vw, 0.75rem);
+    --spacing-md: clamp(0.75rem, 3vw, 1.25rem);
+    --spacing-lg: clamp(1rem, 4vw, 1.5rem);
+    --spacing-xl: clamp(1.5rem, 5vw, 2.5rem);
+
+    --border-radius-sm: 0.25rem;
+    --border-radius-md: 0.5rem;
+    --border-radius-lg: 1rem;
+
+    --transition-default: all 0.25s ease-in-out;
+    --shadow-sm: 0 2px 4px rgba(0,0,0,0.05);
+    --shadow-md: 0 4px 8px rgba(0,0,0,0.08);
+    --shadow-lg: 0 8px 16px rgba(0,0,0,0.1);
+}
+
+/* -------------------- GLOBALS -------------------- */
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
+html {
+    scroll-behavior: smooth;
+    -webkit-text-size-adjust: 100%;
+    -webkit-tap-highlight-color: transparent;
+}
+
+body {
+    font-size: var(--font-size-body);
+    line-height: 1.5;
+    overflow-x: hidden;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+}
+
+img,
+picture,
+video,
+canvas,
+svg {
+    max-width: 100%;
+    height: auto;
+    display: block;
+}
+
+/* Amélioration des zones cliquables sur mobile (taille minimum 44px) */
+button,
+a,
+input[type="button"],
+input[type="submit"],
+.btn,
+[role="button"],
+.nav-link,
+.menu-item {
+    min-height: 44px;
+    min-width: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Suppression des scrollbars horizontales intempestives */
+.container,
+.row,
+[class*="col-"],
+.content-wrapper,
+.main-content {
+    max-width: 100%;
+    overflow-x: hidden;
+}
+
+/* Tableaux et iframes responsives */
+table,
+iframe,
+.video-container,
+.responsive-table {
+    width: 100%;
+    overflow-x: auto;
+    display: block;
+}
+
+table {
+    border-collapse: collapse;
+    border-spacing: 0;
+}
+
+/* Liens et transitions douces */
+a,
+button,
+.btn,
+.card,
+input,
+select,
+textarea {
+    transition: var(--transition-default);
+}
+
+/* Ombres légères premium */
+.card,
+.card-premium,
+.modal,
+.dropdown-menu {
+    box-shadow: var(--shadow-sm);
+}
+
+.card-premium:hover,
+.btn-premium:hover {
+    box-shadow: var(--shadow-md);
+}
+
+/* -------------------- TYPOGRAPHIE FLUIDE -------------------- */
+h1, .h1 {
+    font-size: var(--font-size-h1);
+    margin-bottom: var(--spacing-md);
+}
+h2, .h2 {
+    font-size: var(--font-size-h2);
+    margin-bottom: var(--spacing-sm);
+}
+h3, .h3 {
+    font-size: var(--font-size-h3);
+    margin-bottom: var(--spacing-sm);
+}
+p, .text-body {
+    font-size: var(--font-size-body);
+    margin-bottom: var(--spacing-md);
+}
+small, .text-small {
+    font-size: var(--font-size-small);
+}
+
+/* -------------------- GRILLES RESPONSIVES -------------------- */
+.grid-responsive {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: var(--spacing-lg);
+}
+
+/* Flexbox pour les listes */
+.flex-responsive {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--spacing-md);
+    align-items: center;
+    justify-content: flex-start;
+}
+
+/* Espacements adaptables */
+.section {
+    padding: var(--spacing-xl) var(--spacing-md);
+}
+.container-fluid {
+    padding-left: var(--spacing-md);
+    padding-right: var(--spacing-md);
+}
+
+/* -------------------- MOBILE FIRST (0 à 767px) -------------------- */
+/* Rien de spécial ici car tout est déjà mobile par défaut.
+   On va juste renforcer certains comportements tactiles et marges */
+@media (max-width: 767px) {
+    body {
+        -webkit-tap-highlight-color: rgba(0,0,0,0.05);
+    }
+
+    /* Réduction des paddings sur mobile */
+    .card-body-premium,
+    .content-wrapper,
+    .main-content {
+        padding-left: var(--spacing-sm);
+        padding-right: var(--spacing-sm);
+    }
+
+    /* Empilement des éléments flex sur mobile */
+    .flex-responsive {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    /* Boutons pleine largeur sur mobile (optionnel, mais souvent préférable) */
+    .btn-premium,
+    button[type="submit"],
+    .btn {
+        width: 100%;
+        margin-bottom: var(--spacing-sm);
+    }
+
+    /* Ajustement des modals et dropdowns pour qu'ils ne dépassent pas */
+    .modal-dialog {
+        margin: var(--spacing-md);
+        max-width: calc(100% - 2 * var(--spacing-md));
+    }
+}
+
+/* -------------------- TABLETTES (768px à 1023px) -------------------- */
+@media (min-width: 768px) and (max-width: 1023px) {
+    .grid-responsive {
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: var(--spacing-lg);
+    }
+
+    .flex-responsive {
+        flex-direction: row;
+        flex-wrap: wrap;
+    }
+
+    .btn-premium,
+    button[type="submit"] {
+        width: auto;
+        min-width: 120px;
+    }
+
+    /* Légère augmentation des marges */
+    .container-fluid {
+        padding-left: var(--spacing-lg);
+        padding-right: var(--spacing-lg);
+    }
+}
+
+/* -------------------- DESKTOP (≥1024px) -------------------- */
+@media (min-width: 1024px) {
+    .grid-responsive {
+        grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+        gap: var(--spacing-xl);
+    }
+
+    body {
+        font-size: clamp(1rem, 1vw, 1.125rem);
+    }
+
+    /* Centrage du contenu pour les grands écrans */
+    .container {
+        max-width: 1200px;
+        margin-left: auto;
+        margin-right: auto;
+    }
+}
+
+/* -------------------- GRANDS ÉCRANS (≥1440px) -------------------- */
+@media (min-width: 1440px) {
+    .container {
+        max-width: 1400px;
+    }
+
+    body {
+        font-size: 1.125rem;
+    }
+
+    .grid-responsive {
+        grid-template-columns: repeat(4, 1fr);
+    }
+
+    /* Limitation de la largeur des colonnes pour ne pas avoir des lignes trop longues */
+    .col-lg-4, .col-md-6 {
+        max-width: 380px;
+    }
+}
+
+/* -------------------- UTILITAIRES RESPONSIVES -------------------- */
+/* Masquer/afficher selon écran */
+.hide-on-mobile {
+    display: none;
+}
+@media (min-width: 768px) {
+    .hide-on-mobile {
+        display: block;
+    }
+    .show-on-mobile-only {
+        display: none;
+    }
+}
+@media (max-width: 767px) {
+    .show-on-mobile-only {
+        display: block;
+    }
+    .hide-on-desktop {
+        display: none;
+    }
+}
+
+/* Texte centré sur mobile, aligné sur desktop */
+@media (max-width: 767px) {
+    .text-center-mobile {
+        text-align: center;
+    }
+}
+
+/* Ajustement des images pour éviter les débordements */
+img.fluid {
+    width: 100%;
+    height: auto;
+    object-fit: cover;
+}
+
+/* Empêcher le défilement horizontal forcé */
+html, body {
+    overflow-x: hidden;
+    position: relative;
+}
+
+/* Bordures et ombres cohérentes */
+.card, .card-premium, .modal-content {
+    border-radius: var(--border-radius-md);
+    overflow: hidden;
+}
+
+.btn-premium, button, input, select, textarea {
+    border-radius: var(--border-radius-sm);
+}
+
+/* Amélioration du défilement tactile sur iOS */
+* {
+    -webkit-overflow-scrolling: touch;
+}
+
+/* Scrollbar personnalisée (optionnel, plus premium) */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 10px;
+}
+::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 10px;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+}
+

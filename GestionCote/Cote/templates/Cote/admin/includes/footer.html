@@ -1,0 +1,70 @@
+﻿<footer class="footer">
+    <div class="footer-info">
+        <p><i class="fas fa-copyright"></i> {% now "Y" %} CS KABA - Complexe Scolaire d'Excellence. Tous droits réservés.</p>
+    </div>
+    <div class="footer-stats">
+        <div class="footer-stat"><i class="fas fa-code-branch"></i> Version 2.0</div>
+        <div class="footer-stat"><i class="fas fa-database"></i> Base de données OK</div>
+    </div>
+</footer>
+
+<!-- Scripts additionnels pour les modals et fonctions globales -->
+<script>
+// Fonctions globales (modals, notifications, exports)
+function openModal(modalId) {
+    const modal = document.getElementById(modalId);
+    if (modal) modal.style.display = 'flex';
+}
+function closeModal(modalId) {
+    const modal = document.getElementById(modalId);
+    if (modal) modal.style.display = 'none';
+}
+function showNotifications() {
+    Swal.fire({
+        title: 'Notifications',
+        html: '<div class="text-left"><p><strong>📝 Nouvelle inscription</strong><br>3 nouveaux élèves aujourd\'hui</p><hr class="my-2"><p><strong>📊 Rapports disponibles</strong><br>Les bulletins sont prêts</p></div>',
+        icon: 'info',
+        confirmButtonColor: '#1e3c72'
+    });
+}
+function genererPalmares() {
+    Swal.fire({
+        title: 'Génération du palmarès',
+        text: 'Voulez-vous générer le palmarès de l\'année ?',
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: '#1e3c72',
+        cancelButtonColor: '#d33',
+        confirmButtonText: 'Oui, générer',
+        cancelButtonText: 'Annuler'
+    }).then((result) => {
+        if (result.isConfirmed) {
+            Swal.fire({
+                title: 'Génération en cours...',
+                text: 'Veuillez patienter',
+                allowOutsideClick: false,
+                didOpen: () => Swal.showLoading()
+            });
+            fetch('/api/palmares/generer/', {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]')?.value || '',
+                    'Content-Type': 'application/json'
+                }
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) Swal.fire('Généré!', data.message || 'Palmarès généré avec succès!', 'success');
+                else Swal.fire('Erreur', data.error || 'Une erreur est survenue', 'error');
+            })
+            .catch(() => Swal.fire('Erreur', 'Erreur de connexion', 'error'));
+        }
+    });
+}
+function exportPDF() {
+    Swal.fire('Export PDF', 'Fonctionnalité en développement', 'info');
+}
+function exportExcel() {
+    Swal.fire('Export Excel', 'Fonctionnalité en développement', 'info');
+}
+</script>

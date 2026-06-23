@@ -1,0 +1,337 @@
+<!-- Cote/templates/Cote/admin/reinscription.html -->
+{% extends "Cote/admin/includes/head.html" %}
+{% load static %}
+
+{% block title %}Réinscription | CS KABA{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{% static 'css/admin/reinscription.css' %}">
+{% endblock %}
+
+{% block body %}
+<div class="page-container">
+    <div class="page-header">
+        <div class="page-header-content">
+            <h1 class="page-title">
+                <i class="fas fa-redo-alt"></i>
+                Réinscription des élèves
+            </h1>
+            <p class="page-subtitle">Recherchez un élève par son matricule pour procéder à sa réinscription</p>
+        </div>
+        <div class="page-actions">
+            <a href="{% url 'dashboard_de' %}" class="btn-secondary">
+                <i class="fas fa-arrow-left"></i>
+                Retour au tableau de bord
+            </a>
+        </div>
+    </div>
+
+    <!-- ============================================ -->
+    <!-- MESSAGES DJANGO - CACHÉS (gérés par JS)      -->
+    <!-- ============================================ -->
+    {% if messages %}
+    <div class="messages" style="display: none;">
+        {% for message in messages %}
+            <div class="alert alert-{{ message.tags }}">
+                {{ message }}
+            </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <div class="wizard-container">
+        <!-- Étape 1 : Recherche -->
+        <div class="wizard-steps">
+            <div class="step {% if not eleve %}active{% endif %}" data-step="1">
+                <div class="step-circle">1</div>
+                <div class="step-label">Recherche</div>
+            </div>
+            <div class="step {% if eleve %}active{% endif %}" data-step="2">
+                <div class="step-circle">2</div>
+                <div class="step-label">Informations</div>
+            </div>
+            <div class="step {% if eleve %}active{% endif %}" data-step="3">
+                <div class="step-circle">3</div>
+                <div class="step-label">Confirmation</div>
+            </div>
+        </div>
+
+        <!-- ÉTAPE 1 : Recherche -->
+        <div class="form-step {% if not eleve %}active{% endif %}" data-step="1">
+            <div class="form-section">
+                <div class="section-header">
+                    <i class="fas fa-search"></i>
+                    <h2>Rechercher un élève</h2>
+                </div>
+                <div class="search-container">
+                    <form method="POST" action="" id="searchForm">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="search">
+                        <div class="search-wrapper">
+                            <div class="search-input-group">
+                                <i class="fas fa-search search-icon"></i>
+                                <input type="text" 
+                                       name="matricule" 
+                                       id="matriculeSearch" 
+                                       class="search-input"
+                                       placeholder="Entrez le matricule de l'élève (ex: KABA2026001)"
+                                       value="{{ request.POST.matricule|default:'' }}"
+                                       autocomplete="off"
+                                       required>
+                            </div>
+                            <button type="submit" class="btn-primary">
+                                <i class="fas fa-search"></i> Rechercher
+                            </button>
+                        </div>
+                    </form>
+                    <div id="instantSearchResults" class="instant-results" style="display: none;"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ÉTAPE 2 : Informations de l'élève et réinscription -->
+        <div class="form-step {% if eleve %}active{% endif %}" data-step="2">
+            {% if eleve %}
+            <div class="form-section">
+                <div class="section-header">
+                    <i class="fas fa-user-graduate"></i>
+                    <h2>Informations de l'élève</h2>
+                </div>
+
+                <!-- Carte élève -->
+                <div class="student-card">
+                    <div class="student-header">
+                        <div class="student-avatar">
+                            {% if eleve.photo %}
+                                <img src="{{ eleve.photo.url }}" alt="Photo de {{ personne.prenom }}">
+                            {% else %}
+                                <i class="fas fa-user-graduate"></i>
+                            {% endif %}
+                        </div>
+                        <div class="student-info">
+                            <h2>{{ personne.prenom }} {{ personne.postnom }} {{ personne.nom }}</h2>
+                            <div class="student-meta">
+                                <span><i class="fas fa-id-card"></i> {{ eleve.matricule }}</span>
+                                {% if personne.date_naissance %}
+                                <span><i class="fas fa-calendar-alt"></i> Né(e) le {{ personne.date_naissance|date:"d/m/Y" }}</span>
+                                {% endif %}
+                                <span><i class="fas fa-graduation-cap"></i> Classe actuelle: {{ classe_actuelle.nom_classe }}</span>
+                                <span><i class="fas fa-venus-mars"></i> {{ personne.get_sexe_display|default:"Non spécifié" }}</span>
+                            </div>
+                            <div class="student-badge">
+                                <span class="badge {% if cycle_actuel == 'CO' %}badge-co{% else %}badge-secondaire{% endif %}">
+                                    {% if cycle_actuel == 'CO' %}Cycle d'Orientation{% else %}Secondaire{% endif %}
+                                </span>
+                                {% if prochain_niveau %}
+                                <span class="badge badge-prochain">Prochain niveau: {{ prochain_niveau }}</span>
+                                {% else %}
+                                <span class="badge badge-warning">Dernière classe (4ème - Terminale)</span>
+                                {% endif %}
+                            </div>
+                            {% if not prochain_niveau %}
+                            <div class="alert alert-warning" style="margin-top: 10px; padding: 10px; border-radius: 8px; background: var(--warning-bg, #fff3e0); border-left: 4px solid #f59e0b;">
+                                <i class="fas fa-info-circle"></i>
+                                <strong>Attention :</strong> L'élève est en 4ème (Terminale). C'est la dernière classe du secondaire. 
+                                Après cette année, il ne pourra plus progresser.
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Formulaire de réinscription -->
+                <div class="form-section">
+                    <div class="section-header">
+                        <i class="fas fa-arrow-right"></i>
+                        <h2>Informations pour la réinscription</h2>
+                    </div>
+
+                    <form method="POST" action="" id="reinscriptionForm">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="confirm_reinscription">
+                        <input type="hidden" name="eleve_id" value="{{ eleve.id }}">
+
+                        <div class="form-group">
+                            <label for="est_redoublant" class="checkbox-label">
+                                <input type="checkbox" name="est_redoublant" id="est_redoublant" value="on">
+                                <span><i class="fas fa-repeat"></i> Redoublant</span>
+                                <small>(Cochez si l'élève redouble sa classe actuelle)</small>
+                            </label>
+                            <div id="promotionInfo" class="promotion-info" style="display: none;">
+                                <i class="fas fa-info-circle"></i> 
+                                <span id="promotionInfoText"></span>
+                            </div>
+                        </div>
+
+                        <div class="form-grid">
+                            <!-- Classe actuelle -->
+                            <div class="form-group">
+                                <label>Classe actuelle <span class="required">*</span></label>
+                                <input type="text" class="form-control" 
+                                       id="classe_actuelle_input"
+                                       value="{{ classe_actuelle.nom_classe }}" disabled>
+                                <small class="form-text">Cycle : {% if classe_actuelle.est_cycle_orientation %}CO{% else %}Secondaire{% endif %}</small>
+                            </div>
+
+                            <!-- Prochain niveau -->
+                            <div class="form-group">
+                                <label>Prochain niveau <span class="required">*</span></label>
+                                <input type="text" class="form-control" 
+                                       id="prochain_niveau_input"
+                                       value="{% if prochain_niveau %}{{ prochain_niveau }}{% else %}4ème (Terminale){% endif %}" 
+                                       disabled>
+                                {% if not prochain_niveau %}
+                                <small class="form-text text-warning">⚠️ L'élève est en 4ème (Terminale). C'est la dernière classe du secondaire.</small>
+                                {% else %}
+                                <small class="form-text text-success">✅ L'élève passera en {{ prochain_niveau }}</small>
+                                {% endif %}
+                            </div>
+
+                            <!-- CYCLE - Rempli depuis la base de données -->
+                            <div class="form-group">
+                                <label for="cycle_select">Cycle <span class="required">*</span></label>
+                                <select name="cycle" id="cycle_select" class="form-select" required>
+                                    <option value="">-- Sélectionnez un cycle --</option>
+                                    <option value="CO" {% if cycle_actuel == 'CO' %}selected{% endif %}>Cycle d'Orientation (7e-8e)</option>
+                                    <option value="SECONDAIRE" {% if cycle_actuel == 'SECONDAIRE' %}selected{% endif %}>Secondaire (1ère-4ème)</option>
+                                </select>
+                            </div>
+
+                            <!-- NIVEAU - Rempli depuis la base de données -->
+                            <div class="form-group">
+                                <label for="niveau_select">Niveau <span class="required">*</span></label>
+                                <select name="niveau" id="niveau_select" class="form-select" required>
+                                    <option value="">-- Sélectionnez un niveau --</option>
+                                    {% if classes_disponibles %}
+                                        {% for niveau in classes_disponibles|dictsort:"niveau" %}
+                                            <option value="{{ niveau.niveau }}" {% if niveau.niveau == prochain_niveau %}selected{% endif %}>
+                                                {{ niveau.niveau }}
+                                            </option>
+                                        {% endfor %}
+                                    {% else %}
+                                        <option value="">Aucun niveau disponible</option>
+                                    {% endif %}
+                                </select>
+                                <small class="form-text">Sélectionnez le niveau de la nouvelle classe</small>
+                            </div>
+
+                            <!-- CLASSE - Remplie depuis la base de données -->
+                            <div class="form-group full-width">
+                                <label for="classe_id">Nouvelle classe <span class="required">*</span></label>
+                                <select name="classe_id" id="classe_id" class="form-select" required>
+                                    <option value="">-- Sélectionnez une classe --</option>
+                                    {% for classe in classes_disponibles %}
+                                    <option value="{{ classe.id }}" 
+                                            data-niveau="{{ classe.niveau }}"
+                                            data-cycle="{{ classe.est_cycle_orientation|yesno:'CO,SECONDAIRE' }}">
+                                        {{ classe.nom_classe }} 
+                                        {% if classe.id_option %}({{ classe.id_option.nom_option }}){% endif %}
+                                        - {% if classe.est_cycle_orientation %}CO{% else %}Secondaire{% endif %}
+                                    </option>
+                                    {% empty %}
+                                    <option value="" disabled>Aucune classe disponible</option>
+                                    {% endfor %}
+                                </select>
+                                {% if not classes_disponibles %}
+                                <small class="form-text text-danger">⚠️ Aucune classe disponible. Veuillez créer une classe dans "Gestion des classes et options".</small>
+                                {% else %}
+                                <small class="form-text" id="classe_help">{{ classes_disponibles|length }} classe(s) disponible(s)</small>
+                                {% endif %}
+                            </div>
+
+                            <!-- Observations -->
+                            <div class="form-group full-width">
+                                <label for="observations">Observations</label>
+                                <textarea name="observations" id="observations" class="form-control" 
+                                          rows="3" placeholder="Observations particulières (optionnel)"></textarea>
+                            </div>
+                        </div>
+
+                        <div class="form-actions">
+                            <a href="{% url 'reinscription' %}" class="btn-secondary">
+                                <i class="fas fa-refresh"></i> Nouvelle recherche
+                            </a>
+                            <button type="submit" class="btn-success" id="confirmReinscriptionBtn" 
+                                    {% if not classes_disponibles %}disabled{% endif %}>
+                                <i class="fas fa-check-circle"></i> Confirmer la réinscription
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            {% else %}
+            <div class="empty-state">
+                <i class="fas fa-search fa-4x"></i>
+                <h3>Aucun élève trouvé</h3>
+                <p>Utilisez le formulaire de recherche ci-dessus pour trouver un élève.</p>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Aide -->
+    <div class="help-grid">
+        <div class="help-card">
+            <div class="help-icon" style="background: linear-gradient(135deg, #ef4444, #dc2626);">
+                <i class="fas fa-ban"></i>
+            </div>
+            <h4>Inscription unique</h4>
+            <p>Un élève ne peut être inscrit qu'une seule fois par année académique.</p>
+        </div>
+        <div class="help-card">
+            <div class="help-icon" style="background: linear-gradient(135deg, #2E8B57, #4682B4);">
+                <i class="fas fa-id-card"></i>
+            </div>
+            <h4>Matricule permanent</h4>
+            <p>Le matricule ne change jamais. Conservez-le précieusement pour toutes les démarches.</p>
+        </div>
+        <div class="help-card">
+            <div class="help-icon" style="background: linear-gradient(135deg, #f59e0b, #d97706);">
+                <i class="fas fa-graduation-cap"></i>
+            </div>
+            <h4>Progression logique</h4>
+            <p>L'élève passe automatiquement à la classe immédiatement supérieure, sauf en cas de redoublement.</p>
+        </div>
+    </div>
+</div>
+
+<script src="{% static 'js/admin/reinscription.js' %}"></script>
+<script>
+    // Variables JavaScript pour la logique métier
+    var currentClasseId = {{ classe_actuelle.id|default:'null' }};
+    var currentNiveau = "{{ classe_actuelle.niveau|default:'' }}";
+    var prochainNiveau = "{{ prochain_niveau|default:'' }}";
+    var classesDisponibles = {{ classes_disponibles|safe|default:'[]' }};
+    var cycleActuel = "{{ cycle_actuel|default:'' }}";
+    
+    // Forcer l'affichage de l'étape 2 si un élève est trouvé
+    document.addEventListener('DOMContentLoaded', function() {
+        // Vérifier si un élève est présent
+        var eleveFound = {% if eleve %}true{% else %}false{% endif %};
+        console.log('Élève trouvé:', eleveFound);
+        console.log('Classes disponibles:', classesDisponibles);
+        console.log('Prochain niveau:', prochainNiveau);
+        
+        if (eleveFound) {
+            // Masquer l'étape 1
+            var step1 = document.querySelector('.form-step[data-step="1"]');
+            var step2 = document.querySelector('.form-step[data-step="2"]');
+            
+            if (step1) step1.classList.remove('active');
+            if (step2) step2.classList.add('active');
+            
+            // Mettre à jour les indicateurs d'étape
+            var steps = document.querySelectorAll('.step');
+            steps.forEach(function(step) {
+                var stepNum = parseInt(step.dataset.step);
+                if (stepNum === 1) {
+                    step.classList.remove('active');
+                    step.classList.add('completed');
+                } else if (stepNum === 2) {
+                    step.classList.add('active');
+                }
+            });
+        }
+    });
+</script>
+{% endblock %}

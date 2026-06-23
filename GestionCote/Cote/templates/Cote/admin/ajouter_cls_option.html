@@ -1,0 +1,856 @@
+<!-- Cote/templates/Cote/admin/ajouter_cls_option.html -->
+{% extends "Cote/admin/includes/head.html" %}
+{% load static %}
+
+{% block title %}Gestion des classes et options | CS KABA{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{% static 'css/admin/ajouter_cls_option.css' %}">
+<style>
+    /* Toast notification */
+    .toast-container {
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        z-index: 9999;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        max-width: 350px;
+    }
+    .toast {
+        background: #333;
+        color: #fff;
+        padding: 12px 20px;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        transform: translateX(120%);
+        transition: transform 0.3s ease;
+        font-size: 14px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+    }
+    .toast.show {
+        transform: translateX(0);
+    }
+    .toast.success {
+        background: #2e7d32;
+    }
+    .toast.error {
+        background: #c62828;
+    }
+    .toast .toast-icon {
+        font-size: 20px;
+    }
+
+    /* ============================================= */
+    /* MODAL - POSITIONNEMENT EN HAUT                */
+    /* ============================================= */
+    .modal {
+        display: none;
+        position: fixed;
+        z-index: 9999;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5);
+        animation: fadeInModal 0.3s ease;
+        overflow-y: auto;
+        padding: 20px;
+        align-items: flex-start !important;
+        justify-content: center !important;
+    }
+    .modal.open {
+        display: flex !important;
+    }
+    
+    .modal-content {
+        background: var(--card-bg, white);
+        margin: 20px auto !important;
+        width: 90%;
+        max-width: 550px;
+        border-radius: 16px;
+        animation: slideInModal 0.3s ease;
+        border: 1px solid var(--border-light, #e2e8f0);
+        max-height: 90vh;
+        display: flex;
+        flex-direction: column;
+        position: relative;
+    }
+    
+    @keyframes fadeInModal {
+        from { opacity: 0; }
+        to { opacity: 1; }
+    }
+    @keyframes slideInModal {
+        from {
+            transform: translateY(-30px);
+            opacity: 0;
+        }
+        to {
+            transform: translateY(0);
+            opacity: 1;
+        }
+    }
+    
+    .modal-header {
+        padding: 16px 20px;
+        border-bottom: 1px solid var(--border-light, #e2e8f0);
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        background: var(--card-header-bg, #f8fafc);
+        border-radius: 16px 16px 0 0;
+        flex-shrink: 0;
+    }
+    .modal-header h3 {
+        font-size: 18px;
+        font-weight: 600;
+        color: var(--text-primary, #1e293b);
+        margin: 0;
+    }
+    .modal-header h3 i {
+        margin-right: 8px;
+        color: #1e3c72;
+    }
+    .modal-close {
+        background: none;
+        border: none;
+        font-size: 28px;
+        cursor: pointer;
+        color: var(--text-secondary, #64748b);
+        transition: color 0.3s;
+        line-height: 1;
+        padding: 0 8px;
+    }
+    .modal-close:hover {
+        color: #ef4444;
+    }
+    
+    .modal-body {
+        padding: 20px;
+        overflow-y: auto;
+        flex: 1;
+    }
+    
+    .modal-footer {
+        display: flex !important;
+        justify-content: flex-end !important;
+        gap: 10px !important;
+        padding: 15px 20px !important;
+        border-top: 1px solid var(--border-light, #e2e8f0) !important;
+        background: var(--card-header-bg, #f8fafc) !important;
+        border-radius: 0 0 16px 16px !important;
+        flex-shrink: 0;
+    }
+    
+    .modal-footer .btn-save {
+        background: linear-gradient(135deg, #1e3c72, #2a5298) !important;
+        color: white !important;
+        padding: 10px 28px !important;
+        border: none !important;
+        border-radius: 8px !important;
+        font-weight: 600 !important;
+        cursor: pointer !important;
+        font-family: 'Poppins', sans-serif !important;
+        transition: all 0.3s ease !important;
+    }
+    .modal-footer .btn-save:hover {
+        transform: translateY(-2px) !important;
+        box-shadow: 0 5px 15px rgba(30, 60, 114, 0.3) !important;
+    }
+    .modal-footer .btn-cancel {
+        background: var(--btn-secondary-bg, #f1f5f9) !important;
+        color: var(--btn-secondary-text, #1e293b) !important;
+        padding: 10px 28px !important;
+        border: none !important;
+        border-radius: 8px !important;
+        font-weight: 600 !important;
+        cursor: pointer !important;
+        font-family: 'Poppins', sans-serif !important;
+        transition: all 0.3s ease !important;
+    }
+    .modal-footer .btn-cancel:hover {
+        background: var(--btn-secondary-hover, #e2e8f0) !important;
+    }
+    
+    /* Responsive */
+    @media (max-width: 768px) {
+        .modal {
+            padding: 10px;
+            align-items: flex-start !important;
+        }
+        .modal-content {
+            margin: 10px auto !important;
+            width: 95%;
+            max-height: 95vh;
+        }
+        .modal-body {
+            padding: 15px;
+        }
+        .modal-footer {
+            flex-wrap: wrap;
+        }
+        .modal-footer .btn-save,
+        .modal-footer .btn-cancel {
+            width: 100%;
+            justify-content: center;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block body %}
+<div class="page-container">
+    <div class="page-header">
+        <div class="page-header-content">
+            <h1 class="page-title">
+                <i class="fas fa-school"></i>
+                Gestion des classes et options
+            </h1>
+            <p class="page-subtitle">Créez d'abord les options, puis les classes</p>
+        </div>
+        <div class="page-actions">
+            <a href="{% url 'dashboard_de' %}" class="btn-secondary">
+                <i class="fas fa-arrow-left"></i> Retour
+            </a>
+        </div>
+    </div>
+
+    <!-- Tabs Navigation -->
+    <div class="tabs-container">
+        <div class="tabs-header">
+            <button class="tab-btn active" data-tab="classes">
+                <i class="fas fa-chalkboard"></i> Classes
+                <span class="tab-count">{{ classes.count }}</span>
+            </button>
+            <button class="tab-btn" data-tab="options">
+                <i class="fas fa-book"></i> Options
+                <span class="tab-count">{{ options.count }}</span>
+            </button>
+        </div>
+
+        <!-- Tab Classes -->
+        <div class="tab-content active" id="tab-classes">
+            <div class="tab-actions">
+                <button class="btn-add" onclick="openModal('modalClasse')">
+                    <i class="fas fa-plus"></i> Nouvelle classe
+                </button>
+            </div>
+            <div class="table-container">
+                <table class="data-table" id="classesTable">
+                    <thead>
+                        <tr>
+                            <th>Nom de la classe</th>
+                            <th>Niveau</th>
+                            <th>Cycle</th>
+                            <th>Option</th>
+                            <th>Capacité</th>
+                            <th>Statut</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="classesTableBody">
+                        {% for classe in classes %}
+                        <tr data-id="{{ classe.id }}">
+                            <td>
+                                <strong>{{ classe.nom_classe }}</strong>
+                            </td>
+                            <td>
+                                {% if classe.niveau %}
+                                    <span class="niveau-badge">{{ classe.niveau }}</span>
+                                {% else %}
+                                    <span class="text-muted">—</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if classe.est_cycle_orientation %}
+                                    <span class="cycle-badge co">C.O (Cycle d'Orientation)</span>
+                                {% else %}
+                                    <span class="cycle-badge secondaire">Secondaire</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if classe.id_option %}
+                                    <span class="option-badge">{{ classe.id_option.nom_option }}</span>
+                                {% else %}
+                                    <span class="text-muted">—</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ classe.capacite_max }}</td>
+                            <td>
+                                {% if classe.actif %}
+                                    <span class="status-badge active">Actif</span>
+                                {% else %}
+                                    <span class="status-badge inactive">Inactif</span>
+                                {% endif %}
+                            </td>
+                            <td class="actions-cell">
+                                <button class="action-btn edit" onclick="editClasse({{ classe.id }})"><i class="fas fa-edit"></i></button>
+                                <button class="action-btn toggle" onclick="toggleClasseStatus({{ classe.id }}, {{ classe.actif|lower }})"><i class="fas fa-power-off"></i></button>
+                                <button class="action-btn delete" onclick="deleteClasse({{ classe.id }}, this)"><i class="fas fa-trash"></i></button>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr class="empty-row"><td colspan="7">Aucune classe. Créez des options d'abord, puis des classes.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Tab Options -->
+        <div class="tab-content" id="tab-options">
+            <div class="tab-actions">
+                <button class="btn-add" onclick="openModal('modalOption')">
+                    <i class="fas fa-plus"></i> Nouvelle option
+                </button>
+            </div>
+            <div class="table-container">
+                <table class="data-table" id="optionsTable">
+                    <thead>
+                        <tr>
+                            <th>Nom</th>
+                            <th>Code</th>
+                            <th>Classes liées</th>
+                            <th>Statut</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="optionsTableBody">
+                        {% for option in options %}
+                        <tr data-id="{{ option.id }}">
+                            <td><strong>{{ option.nom_option }}</strong></td>
+                            <td><span class="code-badge">{{ option.code_option }}</span></td>
+                            <td>{{ option.classe_set.count }}</td>
+                            <td>
+                                {% if option.actif %}
+                                    <span class="status-badge active">Actif</span>
+                                {% else %}
+                                    <span class="status-badge inactive">Inactif</span>
+                                {% endif %}
+                            </td>
+                            <td class="actions-cell">
+                                <button class="action-btn edit" onclick="editOption({{ option.id }})"><i class="fas fa-edit"></i></button>
+                                <button class="action-btn toggle" onclick="toggleOptionStatus({{ option.id }}, {{ option.actif|lower }})"><i class="fas fa-power-off"></i></button>
+                                <button class="action-btn delete" onclick="deleteOption({{ option.id }}, this)"><i class="fas fa-trash"></i></button>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr class="empty-row"><td colspan="5">Aucune option. Commencez par ajouter des options.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Container pour les toasts -->
+<div class="toast-container" id="toastContainer"></div>
+
+<!-- MODAL CLASSE -->
+<div id="modalClasse" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3><i class="fas fa-chalkboard"></i> <span id="modalClasseTitle">Ajouter une classe</span></h3>
+            <button class="modal-close" onclick="closeModal('modalClasse')">&times;</button>
+        </div>
+        <form id="classeForm" action="{% url 'ajouter_classe' %}" method="post">
+            {% csrf_token %}
+            <input type="hidden" name="classe_id" id="classe_id">
+            <input type="hidden" name="nom_classe" id="nom_classe_hidden">
+            <input type="hidden" name="niveau" id="niveau_hidden" value="">
+            <div class="modal-body">
+                <div class="form-group">
+                    <label>Cycle <span class="required">*</span></label>
+                    <select id="cycle_select" name="cycle" required>
+                        <option value="">-- Choisir --</option>
+                        <option value="CO">Cycle d'Orientation (7e-8e)</option>
+                        <option value="SECONDAIRE">Secondaire (1ère-4ème)</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Année / Classe</label>
+                    <select id="annee_select" name="annee" required disabled>
+                        <option value="">Sélectionnez d'abord le cycle</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Division (lettre)</label>
+                    <select id="division_select" name="division" required>
+                        <option value="">-- Lettre --</option>
+                        <option value="A">A</option><option value="B">B</option><option value="C">C</option>
+                        <option value="D">D</option><option value="E">E</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Nom généré</label>
+                    <div class="info-display"><i class="fas fa-info-circle"></i> <strong id="classe_nom_preview">-</strong></div>
+                </div>
+                <!-- ============================================= -->
+                <!-- CHAMP NIVEAU (AUTO-GÉNÉRÉ)                   -->
+                <!-- ============================================= -->
+                <div class="form-group">
+                    <label>Niveau <span class="required">*</span></label>
+                    <select id="niveau_select" name="niveau_display" required>
+                        <option value="">-- Sélectionnez un niveau --</option>
+                        <option value="7e">7e (Cycle d'Orientation)</option>
+                        <option value="8e">8e (Cycle d'Orientation)</option>
+                        <option value="1ère">1ère (Secondaire)</option>
+                        <option value="2ème">2ème (Secondaire)</option>
+                        <option value="3ème">3ème (Secondaire)</option>
+                        <option value="4ème">4ème (Secondaire - Terminale)</option>
+                    </select>
+                    <small class="form-text">⚠️ Le niveau est obligatoire. Il détermine la progression de l'élève.</small>
+                </div>
+                <div class="form-group" id="option_group_classe" style="display:none;">
+                    <label>Option <span class="required">*</span></label>
+                    <select name="id_option" id="classe_option">
+                        <option value="">-- Sélectionnez --</option>
+                        {% for option in options %}
+                        <option value="{{ option.id }}">{{ option.nom_option }} ({{ option.code_option }})</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="form-row">
+                    <div class="form-group"><label>Capacité</label><input type="number" name="capacite_max" id="classe_capacite" value="30"></div>
+                    <div class="form-group"><label><input type="checkbox" name="actif" id="classe_actif" checked> Actif</label></div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn-cancel" onclick="closeModal('modalClasse')">Annuler</button>
+                <button type="submit" class="btn-save">Enregistrer</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- MODAL OPTION -->
+<div id="modalOption" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3><i class="fas fa-book"></i> <span id="modalOptionTitle">Ajouter une option</span></h3>
+            <button class="modal-close" onclick="closeModal('modalOption')">&times;</button>
+        </div>
+        <form id="optionForm" action="{% url 'ajouter_option' %}" method="post">
+            {% csrf_token %}
+            <input type="hidden" name="option_id" id="option_id">
+            <div class="modal-body">
+                <div class="form-row">
+                    <div class="form-group"><label>Nom <span class="required">*</span></label><input type="text" name="nom_option" id="option_nom" required></div>
+                    <div class="form-group"><label>Code <span class="required">*</span></label><input type="text" name="code_option" id="option_code" required></div>
+                </div>
+                <div class="form-group"><label><input type="checkbox" name="actif" id="option_actif" checked> Actif</label></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn-cancel" onclick="closeModal('modalOption')">Annuler</button>
+                <button type="submit" class="btn-save">Enregistrer</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    // -------------------------------------------------------------
+    // SYSTEME DE TOAST (NOTIFICATION)
+    // -------------------------------------------------------------
+    function showToast(message, type = 'success') {
+        const container = document.getElementById('toastContainer');
+        const toast = document.createElement('div');
+        toast.className = `toast ${type}`;
+        const icon = type === 'success' ? '✅' : '❌';
+        toast.innerHTML = `<span class="toast-icon">${icon}</span> ${message}`;
+        container.appendChild(toast);
+        setTimeout(() => { toast.classList.add('show'); }, 10);
+        setTimeout(() => {
+            toast.classList.remove('show');
+            setTimeout(() => { toast.remove(); }, 300);
+        }, 4000);
+    }
+
+    // -------------------------------------------------------------
+    // 1. GESTION DES ONGLETS
+    // -------------------------------------------------------------
+    document.querySelectorAll('.tab-btn').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            document.querySelectorAll('.tab-btn').forEach(function(b) { b.classList.remove('active'); });
+            document.querySelectorAll('.tab-content').forEach(function(c) { c.classList.remove('active'); });
+            this.classList.add('active');
+            var tabId = this.dataset.tab;
+            document.getElementById('tab-' + tabId).classList.add('active');
+        });
+    });
+
+    // -------------------------------------------------------------
+    // 2. OUVERTURE / FERMETURE DES MODALES
+    // -------------------------------------------------------------
+    function openModal(modalId) {
+        document.getElementById(modalId).classList.add('open');
+        if (modalId === 'modalClasse') {
+            document.getElementById('modalClasseTitle').textContent = 'Ajouter une classe';
+            document.getElementById('classe_id').value = '';
+            document.getElementById('classeForm').reset();
+            document.getElementById('nom_classe_hidden').value = '';
+            document.getElementById('niveau_hidden').value = '';
+            document.getElementById('classe_nom_preview').textContent = '-';
+            document.getElementById('option_group_classe').style.display = 'none';
+            var cycleSelect = document.getElementById('cycle_select');
+            var anneeSelect = document.getElementById('annee_select');
+            var divisionSelect = document.getElementById('division_select');
+            var niveauSelect = document.getElementById('niveau_select');
+            cycleSelect.value = '';
+            anneeSelect.innerHTML = '<option value="">Sélectionnez d\'abord le cycle</option>';
+            anneeSelect.disabled = true;
+            divisionSelect.value = '';
+            niveauSelect.value = '';
+            updateClasseNom();
+            updateNiveauSuggestion();
+        } else if (modalId === 'modalOption') {
+            document.getElementById('modalOptionTitle').textContent = 'Ajouter une option';
+            document.getElementById('option_id').value = '';
+            document.getElementById('optionForm').reset();
+            document.getElementById('option_actif').checked = true;
+        }
+    }
+
+    function closeModal(modalId) {
+        document.getElementById(modalId).classList.remove('open');
+    }
+
+    window.addEventListener('click', function(event) {
+        if (event.target.classList.contains('modal')) {
+            event.target.classList.remove('open');
+        }
+    });
+
+    // -------------------------------------------------------------
+    // 3. GÉNÉRATION DU NOM DE LA CLASSE
+    // -------------------------------------------------------------
+    function updateClasseNom() {
+        const cycle = document.getElementById('cycle_select').value;
+        const annee = document.getElementById('annee_select').value;
+        const division = document.getElementById('division_select').value;
+        const preview = document.getElementById('classe_nom_preview');
+        const hidden = document.getElementById('nom_classe_hidden');
+        let nom = '';
+        if (cycle && annee && division) {
+            if (cycle === 'CO') {
+                nom = annee + 'e' + division;  // ex: 7eA, 8eA
+            } else {
+                const suffix = ['ère', 'ème', 'ème', 'ème'];
+                const index = parseInt(annee) - 1;
+                if (index >= 0 && index < suffix.length) {
+                    nom = annee + suffix[index] + division;
+                } else {
+                    nom = annee + 'ème' + division;
+                }
+            }
+            preview.textContent = nom;
+            hidden.value = nom;
+        } else {
+            preview.textContent = '-';
+            hidden.value = '';
+        }
+        const optionGroup = document.getElementById('option_group_classe');
+        if (cycle === 'SECONDAIRE') {
+            optionGroup.style.display = 'block';
+        } else {
+            optionGroup.style.display = 'none';
+        }
+        updateNiveauSuggestion();
+    }
+
+    // -------------------------------------------------------------
+    // 4. SUGGESTION AUTOMATIQUE DU NIVEAU
+    // -------------------------------------------------------------
+    function updateNiveauSuggestion() {
+        const cycle = document.getElementById('cycle_select').value;
+        const annee = document.getElementById('annee_select').value;
+        const niveauSelect = document.getElementById('niveau_select');
+        const niveauHidden = document.getElementById('niveau_hidden');
+        
+        if (cycle && annee) {
+            let niveauSuggere = '';
+            if (cycle === 'CO') {
+                if (annee === '7') niveauSuggere = '7e';
+                else if (annee === '8') niveauSuggere = '8e';
+            } else if (cycle === 'SECONDAIRE') {
+                if (annee === '1') niveauSuggere = '1ère';
+                else if (annee === '2') niveauSuggere = '2ème';
+                else if (annee === '3') niveauSuggere = '3ème';
+                else if (annee === '4') niveauSuggere = '4ème';
+            }
+            if (niveauSuggere) {
+                for (let i = 0; i < niveauSelect.options.length; i++) {
+                    if (niveauSelect.options[i].value === niveauSuggere) {
+                        niveauSelect.value = niveauSuggere;
+                        niveauHidden.value = niveauSuggere;
+                        break;
+                    }
+                }
+            }
+        } else {
+            niveauHidden.value = '';
+        }
+    }
+
+    // Peupler les années
+    function populateAnnees(cycle) {
+        const anneeSelect = document.getElementById('annee_select');
+        anneeSelect.innerHTML = '';
+        if (cycle === 'CO') {
+            anneeSelect.innerHTML = '<option value="">-- Choisir --</option><option value="7">7e</option><option value="8">8e</option>';
+            anneeSelect.disabled = false;
+        } else if (cycle === 'SECONDAIRE') {
+            anneeSelect.innerHTML = '<option value="">-- Choisir --</option><option value="1">1ère</option><option value="2">2ème</option><option value="3">3ème</option><option value="4">4ème</option>';
+            anneeSelect.disabled = false;
+        } else {
+            anneeSelect.innerHTML = '<option value="">Sélectionnez d\'abord le cycle</option>';
+            anneeSelect.disabled = true;
+        }
+        updateClasseNom();
+    }
+
+    document.getElementById('cycle_select').addEventListener('change', function() {
+        populateAnnees(this.value);
+        updateNiveauSuggestion();
+    });
+    document.getElementById('annee_select').addEventListener('change', function() {
+        updateClasseNom();
+        updateNiveauSuggestion();
+    });
+    document.getElementById('division_select').addEventListener('change', updateClasseNom);
+    
+    // Quand le niveau est sélectionné manuellement, mettre à jour le champ caché
+    document.getElementById('niveau_select').addEventListener('change', function() {
+        document.getElementById('niveau_hidden').value = this.value;
+        console.log('Niveau sélectionné:', this.value);
+    });
+
+    document.addEventListener('DOMContentLoaded', function() {
+        document.getElementById('annee_select').innerHTML = '<option value="">Sélectionnez d\'abord le cycle</option>';
+        document.getElementById('annee_select').disabled = true;
+        updateClasseNom();
+    });
+
+    // -------------------------------------------------------------
+    // 5. FONCTIONS D'ÉDITION, TOGGLE ET SUPPRESSION (AJAX)
+    // -------------------------------------------------------------
+    function editClasse(id) {
+        fetch('/api/classe/' + id + '/get/')
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    const classe = data.classe;
+                    document.getElementById('modalClasseTitle').textContent = 'Modifier la classe';
+                    document.getElementById('classe_id').value = classe.id;
+                    const cycleSelect = document.getElementById('cycle_select');
+                    cycleSelect.value = classe.est_cycle_orientation ? 'CO' : 'SECONDAIRE';
+                    populateAnnees(cycleSelect.value);
+                    const anneeSelect = document.getElementById('annee_select');
+                    const nom = classe.nom_classe;
+                    let anneeVal = '';
+                    if (classe.est_cycle_orientation) {
+                        const match = nom.match(/^(\d+)e/);
+                        if (match) anneeVal = match[1];
+                    } else {
+                        const match = nom.match(/^(\d+)[èreème]/);
+                        if (match) anneeVal = match[1];
+                    }
+                    if (anneeVal) anneeSelect.value = anneeVal;
+                    const division = nom.slice(-1);
+                    document.getElementById('division_select').value = division;
+                    
+                    // Remplir le niveau
+                    if (classe.niveau) {
+                        document.getElementById('niveau_select').value = classe.niveau;
+                        document.getElementById('niveau_hidden').value = classe.niveau;
+                    } else {
+                        document.getElementById('niveau_select').value = '';
+                        document.getElementById('niveau_hidden').value = '';
+                    }
+                    
+                    if (classe.id_option) {
+                        document.getElementById('classe_option').value = classe.id_option;
+                    } else {
+                        document.getElementById('classe_option').value = '';
+                    }
+                    document.getElementById('classe_capacite').value = classe.capacite_max;
+                    document.getElementById('classe_actif').checked = classe.actif;
+                    updateClasseNom();
+                    openModal('modalClasse');
+                } else {
+                    showToast('Erreur : ' + data.error, 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Erreur:', error);
+                showToast('Erreur réseau', 'error');
+            });
+    }
+
+    function toggleClasseStatus(id, currentStatus) {
+        if (!confirm('Voulez-vous ' + (currentStatus ? 'désactiver' : 'activer') + ' cette classe ?')) return;
+        fetch('/api/classe/' + id + '/toggle/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCSRFToken()
+            },
+            body: JSON.stringify({ actif: !currentStatus })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showToast('Statut de la classe modifié', 'success');
+                location.reload();
+            } else {
+                showToast('Erreur : ' + data.error, 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Erreur:', error);
+            showToast('Erreur réseau', 'error');
+        });
+    }
+
+    function deleteClasse(id, btnElement) {
+        if (!confirm('Êtes-vous sûr de vouloir supprimer cette classe ? Cette action est irréversible.')) return;
+        fetch('/api/classe/' + id + '/supprimer/', {
+            method: 'DELETE',
+            headers: {
+                'X-CSRFToken': getCSRFToken()
+            }
+        })
+        .then(response => {
+            if (!response.ok) {
+                return response.json().then(data => {
+                    throw new Error(data.error || 'Erreur serveur');
+                }).catch(() => {
+                    throw new Error('Erreur réseau (serveur non joignable)');
+                });
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.success) {
+                showToast(data.message, 'success');
+                const tr = btnElement.closest('tr');
+                if (tr) {
+                    tr.remove();
+                    const tabCount = document.querySelector('.tab-btn[data-tab="classes"] .tab-count');
+                    if (tabCount) {
+                        let count = parseInt(tabCount.textContent);
+                        tabCount.textContent = count - 1;
+                    }
+                }
+            } else {
+                showToast('Erreur : ' + data.error, 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Erreur:', error);
+            showToast(error.message || 'Erreur réseau', 'error');
+        });
+    }
+
+    // --- Fonctions pour les options ---
+    function editOption(id) {
+        fetch('/api/option/' + id + '/get/')
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    const option = data.option;
+                    document.getElementById('modalOptionTitle').textContent = 'Modifier l\'option';
+                    document.getElementById('option_id').value = option.id;
+                    document.getElementById('option_nom').value = option.nom_option;
+                    document.getElementById('option_code').value = option.code_option;
+                    document.getElementById('option_actif').checked = option.actif;
+                    openModal('modalOption');
+                } else {
+                    showToast('Erreur : ' + data.error, 'error');
+                }
+            })
+            .catch(error => {
+                console.error('Erreur:', error);
+                showToast('Erreur réseau', 'error');
+            });
+    }
+
+    function toggleOptionStatus(id, currentStatus) {
+        if (!confirm('Voulez-vous ' + (currentStatus ? 'désactiver' : 'activer') + ' cette option ?')) return;
+        fetch('/api/option/' + id + '/toggle/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCSRFToken()
+            },
+            body: JSON.stringify({ actif: !currentStatus })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showToast('Statut de l\'option modifié', 'success');
+                location.reload();
+            } else {
+                showToast('Erreur : ' + data.error, 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Erreur:', error);
+            showToast('Erreur réseau', 'error');
+        });
+    }
+
+    function deleteOption(id, btnElement) {
+        if (!confirm('Êtes-vous sûr de vouloir supprimer cette option ? Les classes associées seront affectées.')) return;
+        fetch('/api/option/' + id + '/supprimer/', {
+            method: 'DELETE',
+            headers: {
+                'X-CSRFToken': getCSRFToken()
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                showToast(data.message, 'success');
+                const tr = btnElement.closest('tr');
+                if (tr) tr.remove();
+                const tabCount = document.querySelector('.tab-btn[data-tab="options"] .tab-count');
+                if (tabCount) {
+                    let count = parseInt(tabCount.textContent);
+                    tabCount.textContent = count - 1;
+                }
+            } else {
+                showToast('Erreur : ' + data.error, 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Erreur:', error);
+            showToast('Erreur réseau', 'error');
+        });
+    }
+
+    function getCSRFToken() {
+        return document.querySelector('[name=csrfmiddlewaretoken]').value;
+    }
+
+    // -------------------------------------------------------------
+    // 6. VALIDATION DU FORMULAIRE AVANT SOUMISSION
+    // -------------------------------------------------------------
+    document.getElementById('classeForm').addEventListener('submit', function(e) {
+        const niveauSelect = document.getElementById('niveau_select');
+        if (!niveauSelect.value) {
+            e.preventDefault();
+            showToast('⚠️ Veuillez sélectionner un niveau pour la classe.', 'error');
+            return false;
+        }
+        // S'assurer que le niveau caché est bien rempli
+        document.getElementById('niveau_hidden').value = niveauSelect.value;
+        return true;
+    });
+</script>
+{% endblock %}

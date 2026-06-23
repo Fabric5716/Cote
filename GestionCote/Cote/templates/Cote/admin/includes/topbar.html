@@ -1,0 +1,49 @@
+<!-- Cote/templates/Cote/admin/includes/topbar.html -->
+<header class="topbar">
+    <div class="topbar-left">
+        <button class="hamburger" id="sidebarToggle" aria-label="Menu mobile">
+            <i class="fas fa-bars"></i>
+        </button>
+        <div class="etablissement-info">
+            <strong>CS KABA</strong>
+            <small>Complexe Scolaire d'Excellence</small>
+        </div>
+        <h1 class="page-title">{% block page_title %}Tableau de bord{% endblock %}</h1>
+        {% if annee_active %}
+        <div class="year-badge">
+            <i class="fas fa-calendar-alt"></i>
+            <span>{{ annee_active.annee_scolaire }}</span>
+        </div>
+        {% endif %}
+    </div>
+    <div class="topbar-right">
+        <div class="date-time">
+            <i class="fas fa-clock"></i>
+            <span id="currentDateTime"></span>
+        </div>
+        <button class="theme-toggle" id="themeToggle" aria-label="Changer de thème">
+            <i class="fas fa-moon"></i>
+        </button>
+        <div class="user-dropdown">
+            <button class="dropdown-trigger">
+                <i class="fas fa-user-circle"></i>
+                <span>{{ user_nom|default:"Administrateur" }}</span>
+                <i class="fas fa-chevron-down"></i>
+            </button>
+            <div class="dropdown-menu">
+                <div class="dropdown-header">
+                    <h4>{{ user_nom }} {{ user_prenom|default:"" }}</h4>
+                    <p>Directeur des Études</p>
+                </div>
+                <!-- URL corrigée vers le profil admin -->
+                <a href="{% url 'profil_admin' %}" class="dropdown-item">
+                    <i class="fas fa-user-cog"></i> Mon profil
+                </a>
+                <div class="dropdown-divider"></div>
+                <a href="{% url 'logout' %}" class="dropdown-item text-danger">
+                    <i class="fas fa-sign-out-alt"></i> Déconnexion
+                </a>
+            </div>
+        </div>
+    </div>
+</header>

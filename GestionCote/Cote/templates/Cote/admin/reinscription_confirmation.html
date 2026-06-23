@@ -1,0 +1,89 @@
+<!-- Cote/templates/Cote/admin/reinscription_confirmation.html -->
+{% extends "Cote/admin/includes/head.html" %}
+{% load static %}
+
+{% block title %}Confirmation de réinscription | CS KABA{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{% static 'css/admin/reinscription.css' %}">
+{% endblock %}
+
+{% block body %}
+<div class="page-container">
+    <div class="confirmation-container">
+        <div class="confirmation-icon success">
+            <i class="fas fa-check-circle"></i>
+        </div>
+        
+        <h1 class="text-center mb-3">✅ Réinscription confirmée !</h1>
+        
+        <div class="wizard-container">
+            <div class="confirmation-card">
+                <div class="confirmation-header">
+                    <h3><i class="fas fa-file-alt"></i> Récapitulatif de la réinscription</h3>
+                </div>
+                <div class="confirmation-body">
+                    <div class="confirmation-item">
+                        <span class="confirmation-label">Élève</span>
+                        <span class="confirmation-value">
+                            {{ reinscription.eleve.id_personne.prenom }} 
+                            {{ reinscription.eleve.id_personne.postnom }} 
+                            {{ reinscription.eleve.id_personne.nom }}
+                        </span>
+                    </div>
+                    <div class="confirmation-item">
+                        <span class="confirmation-label">Matricule</span>
+                        <span class="confirmation-value">{{ reinscription.eleve.matricule }}</span>
+                    </div>
+                    <div class="confirmation-item">
+                        <span class="confirmation-label">Année académique</span>
+                        <span class="confirmation-value">{{ reinscription.annee_scolaire.annee_scolaire }}</span>
+                    </div>
+                    <div class="confirmation-item">
+                        <span class="confirmation-label">Classe précédente</span>
+                        <span class="confirmation-value">{{ reinscription.classe_ancienne.nom_classe }}</span>
+                    </div>
+                    <div class="confirmation-item">
+                        <span class="confirmation-label">Nouvelle classe</span>
+                        <span class="confirmation-value">{{ reinscription.classe_nouvelle.nom_classe }}</span>
+                    </div>
+                    <div class="confirmation-item">
+                        <span class="confirmation-label">Statut</span>
+                        <span class="confirmation-value">
+                            <span class="badge {% if reinscription.est_redoublant %}badge-warning{% else %}badge-success{% endif %}">
+                                {% if reinscription.est_redoublant %}Redoublant{% else %}Passage normal{% endif %}
+                            </span>
+                        </span>
+                    </div>
+                    <div class="confirmation-item">
+                        <span class="confirmation-label">Validée par</span>
+                        <span class="confirmation-value">{{ reinscription.validee_par.id_personne.prenom }} {{ reinscription.validee_par.id_personne.nom }}</span>
+                    </div>
+                    <div class="confirmation-item">
+                        <span class="confirmation-label">Date de validation</span>
+                        <span class="confirmation-value">{{ reinscription.date_validation|date:"d/m/Y à H:i" }}</span>
+                    </div>
+                    {% if reinscription.observations %}
+                    <div class="confirmation-item">
+                        <span class="confirmation-label">Observations</span>
+                        <span class="confirmation-value">{{ reinscription.observations }}</span>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="confirmation-actions">
+                <a href="{% url 'reinscription' %}" class="btn-primary">
+                    <i class="fas fa-redo-alt"></i> Nouvelle réinscription
+                </a>
+                <a href="{% url 'liste_eleves' %}" class="btn-secondary">
+                    <i class="fas fa-list"></i> Voir la liste des élèves
+                </a>
+                <button onclick="window.print()" class="btn-secondary">
+                    <i class="fas fa-print"></i> Imprimer
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

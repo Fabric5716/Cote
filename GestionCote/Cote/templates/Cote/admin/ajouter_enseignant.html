@@ -1,0 +1,181 @@
+<!-- Cote/templates/Cote/admin/ajouter_enseignant.html -->
+{% extends "Cote/admin/includes/head.html" %}
+{% load static %}
+
+{% block title %}Ajouter un enseignant | CS KABA{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{% static 'css/admin/ajouter_enseignant.css' %}">
+{% endblock %}
+
+{% block body %}
+<div class="page-container">
+    <!-- En-tête de la page -->
+    <div class="page-header">
+        <div class="page-header-content">
+            <h1 class="page-title">
+                <i class="fas fa-chalkboard-user"></i>
+                Ajouter un enseignant
+            </h1>
+            <p class="page-subtitle">Remplissez le formulaire ci-dessous pour ajouter un nouvel enseignant</p>
+        </div>
+        <div class="page-actions">
+            <a href="{% url 'dashboard_de' %}" class="btn-secondary">
+                <i class="fas fa-arrow-left"></i>
+                Retour
+            </a>
+        </div>
+    </div>
+
+    <!-- Formulaire -->
+    <div class="form-container">
+        <form id="enseignantForm" method="post" action="{% url 'ajouter_enseignant' %}" enctype="multipart/form-data">
+            {% csrf_token %}
+            
+            <!-- Informations personnelles -->
+            <div class="form-section">
+                <div class="section-header">
+                    <i class="fas fa-user-circle"></i>
+                    <h2>Informations personnelles</h2>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="nom">Nom <span class="required">*</span></label>
+                        <input type="text" id="nom" name="nom" required placeholder="Entrez le nom" autocomplete="off">
+                        <small class="form-text">Nom de famille de l'enseignant</small>
+                    </div>
+                    <div class="form-group">
+                        <label for="postnom">Postnom</label>
+                        <input type="text" id="postnom" name="postnom" placeholder="Entrez le postnom" autocomplete="off">
+                        <small class="form-text">Optionnel</small>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="prenom">Prénom <span class="required">*</span></label>
+                        <input type="text" id="prenom" name="prenom" required placeholder="Entrez le prénom" autocomplete="off">
+                    </div>
+                    <div class="form-group">
+                        <label for="sexe">Sexe <span class="required">*</span></label>
+                        <select id="sexe" name="sexe" required>
+                            <option value="">Sélectionnez le sexe</option>
+                            <option value="M">Masculin</option>
+                            <option value="F">Féminin</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="date_naissance">Date de naissance</label>
+                        <input type="date" id="date_naissance" name="date_naissance">
+                    </div>
+                    <div class="form-group">
+                        <label for="lieu_naissance">Lieu de naissance</label>
+                        <input type="text" id="lieu_naissance" name="lieu_naissance" placeholder="Entrez le lieu de naissance">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Coordonnées -->
+            <div class="form-section">
+                <div class="section-header">
+                    <i class="fas fa-address-card"></i>
+                    <h2>Coordonnées</h2>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="email">Email <span class="required">*</span></label>
+                        <input type="email" id="email" name="email" required placeholder="enseignant@cskaba.com">
+                        <small class="form-text">Utilisé pour la connexion</small>
+                    </div>
+                    <div class="form-group">
+                        <label for="telephone">Téléphone</label>
+                        <input type="tel" id="telephone" name="telephone" placeholder="+243 XXX XXX XXX">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="adresse">Adresse</label>
+                        <textarea id="adresse" name="adresse" rows="3" placeholder="Adresse complète"></textarea>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Informations professionnelles -->
+            <div class="form-section">
+                <div class="section-header">
+                    <i class="fas fa-briefcase"></i>
+                    <h2>Informations professionnelles</h2>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="specialite">Spécialité <span class="required">*</span></label>
+                        <input type="text" id="specialite" name="specialite" required placeholder="Ex: Mathématiques, Français, etc.">
+                    </div>
+                    <div class="form-group">
+                        <label for="matiere_principale">Matière principale</label>
+                        <input type="text" id="matiere_principale" name="matiere_principale" placeholder="Matière principale enseignée">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="date_embauche">Date d'embauche</label>
+                        <input type="date" id="date_embauche" name="date_embauche" value="{% now 'Y-m-d' %}">
+                    </div>
+                    <div class="form-group">
+                        <label for="diplome">Diplôme</label>
+                        <select id="diplome" name="diplome">
+                            <option value="">Sélectionnez le diplôme</option>
+                            <option value="BAC">BAC</option>
+                            <option value="LICENCE">Licence</option>
+                            <option value="MASTER">Master</option>
+                            <option value="DOCTORAT">Doctorat</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="statut">Statut</label>
+                        <select id="statut" name="statut">
+                            <option value="PLEIN_TEMPS">Plein temps</option>
+                            <option value="MI_TEMPS">Mi-temps</option>
+                            <option value="VACATAIRE">Vacataire</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sécurité -->
+            <div class="form-section">
+                <div class="section-header">
+                    <i class="fas fa-lock"></i>
+                    <h2>Sécurité</h2>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label for="password">Mot de passe <span class="required">*</span></label>
+                        <input type="password" id="password" name="password" required>
+                        <small class="form-text">Minimum 6 caractères</small>
+                    </div>
+                    <div class="form-group">
+                        <label for="password_confirm">Confirmer le mot de passe <span class="required">*</span></label>
+                        <input type="password" id="password_confirm" name="password_confirm" required>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Boutons d'action -->
+            <div class="form-actions">
+                <button type="reset" class="btn-reset">
+                    <i class="fas fa-eraser"></i> Réinitialiser
+                </button>
+                <button type="submit" class="btn-submit">
+                    <i class="fas fa-save"></i> Enregistrer l'enseignant
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script src="{% static 'js/admin/ajouter_enseignant.js' %}"></script>
+{% endblock %}

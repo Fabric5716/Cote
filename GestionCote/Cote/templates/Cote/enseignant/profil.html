@@ -1,0 +1,239 @@
+{% extends "Cote/enseignant/includes/head.html" %}
+{% load static %}
+
+{% block title %}Mon profil | Enseignant{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{% static 'css/enseignant/profil.css' %}">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+{% endblock %}
+
+{% block body %}
+<div class="modern-container">
+    <!-- Carte de profil avec chevauchement -->
+    <div class="profile-cover-card">
+        <div class="profile-cover" style="background-image: url('{{ cover_url }}');">
+            <img src="{{ photo_url }}" alt="Photo de profil" class="profile-avatar-lg" title="Cliquez pour changer la photo">
+        </div>
+        <div class="profile-header-info">
+            <h2 class="profile-name">{{ personne.prenom }} {{ personne.nom }}</h2>
+            <p class="profile-function">{{ personnel.specialite|default:"Enseignant" }}</p>
+            <div class="profile-meta">
+                <span class="profile-meta-item"><i class="fas fa-id-card"></i> {{ utilisateur.email }}</span>
+                <span class="profile-meta-item"><i class="fas fa-envelope"></i> {{ personne.email|default:utilisateur.email }}</span>
+            </div>
+            <div>
+                <span class="badge-role"><i class="fas fa-user-tag"></i> Enseignant</span>
+                {% if utilisateur.est_actif %}
+                    <span class="badge-status active"><i class="fas fa-circle" style="font-size: 8px;"></i> Actif</span>
+                {% else %}
+                    <span class="badge-status inactive"><i class="fas fa-circle" style="font-size: 8px;"></i> Inactif</span>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <!-- Messages flash -->
+    {% if messages %}
+        {% for message in messages %}
+            <div class="alert alert-{% if message.tags == 'error' %}danger{% else %}{{ message.tags }}{% endif %} alert-dismissible fade show" role="alert">
+                <i class="fas fa-{% if message.tags == 'success' %}check-circle{% else %}exclamation-triangle{% endif %}"></i> {{ message }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        {% endfor %}
+    {% endif %}
+
+    <!-- Deux colonnes -->
+    <div class="profile-two-columns">
+        <!-- Colonne gauche -->
+        <div class="profile-left-col">
+            <!-- Informations personnelles -->
+            <div class="info-card">
+                <div class="info-card-header">
+                    <i class="fas fa-user-circle"></i>
+                    <h3>Informations personnelles</h3>
+                </div>
+                <div class="info-card-body">
+                    <div class="info-grid">
+                        <div class="info-item"><span class="info-label">Nom complet</span><span class="info-value">{{ personne.nom }} {{ personne.postnom }} {{ personne.prenom }}</span></div>
+                        <div class="info-item"><span class="info-label">Sexe</span><span class="info-value">{{ personne.get_sexe_display|default:"Non spécifié" }}</span></div>
+                        <div class="info-item"><span class="info-label">Date de naissance</span><span class="info-value">{{ personne.date_naissance|date:"d/m/Y"|default:"Non renseignée" }}</span></div>
+                        <div class="info-item"><span class="info-label">Lieu de naissance</span><span class="info-value">{{ personne.lieu_naissance|default:"Non renseigné" }}</span></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Informations professionnelles -->
+            <div class="info-card">
+                <div class="info-card-header">
+                    <i class="fas fa-briefcase"></i>
+                    <h3>Informations professionnelles</h3>
+                </div>
+                <div class="info-card-body">
+                    <div class="info-grid">
+                        <div class="info-item"><span class="info-label">Identifiant</span><span class="info-value">{{ utilisateur.email }}</span></div>
+                        <div class="info-item"><span class="info-label">Spécialité</span><span class="info-value">{{ personnel.specialite|default:"Non renseignée" }}</span></div>
+                        <div class="info-item"><span class="info-label">Date d'embauche</span><span class="info-value">{{ personnel.date_embauche|date:"d/m/Y"|default:"Non renseignée" }}</span></div>
+                        <div class="info-item"><span class="info-label">Statut compte</span><span class="info-value">{% if utilisateur.est_actif %}Actif{% else %}Inactif{% endif %}</span></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Coordonnées -->
+            <div class="info-card">
+                <div class="info-card-header">
+                    <i class="fas fa-map-marker-alt"></i>
+                    <h3>Coordonnées</h3>
+                </div>
+                <div class="info-card-body">
+                    <div class="info-grid">
+                        <div class="info-item">
+                            <span class="info-label">Téléphone</span>
+                            <span class="info-value">
+                                {% if personne.telephone %}
+                                    {{ personne.telephone }}
+                                {% else %}
+                                    <span class="text-muted">Non renseigné</span>
+                                    <small><a href="#" onclick="scrollToEditCoords(); return false;" class="text-primary">Ajouter</a></small>
+                                {% endif %}
+                            </span>
+                        </div>
+                        <div class="info-item">
+                            <span class="info-label">Email personnel</span>
+                            <span class="info-value">
+                                {% if personne.email %}
+                                    {{ personne.email }}
+                                {% else %}
+                                    <span class="text-muted">Non renseigné</span>
+                                    <small><a href="#" onclick="scrollToEditCoords(); return false;" class="text-primary">Ajouter</a></small>
+                                {% endif %}
+                            </span>
+                        </div>
+                        <div class="info-item full-width">
+                            <span class="info-label">Adresse</span>
+                            <span class="info-value">
+                                {% if personne.adresse %}
+                                    {{ personne.adresse|linebreaksbr }}
+                                {% else %}
+                                    <span class="text-muted">Non renseignée</span>
+                                    <small><a href="#" onclick="scrollToEditCoords(); return false;" class="text-primary">Ajouter</a></small>
+                                {% endif %}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Informations système -->
+            <div class="info-card">
+                <div class="info-card-header">
+                    <i class="fas fa-database"></i>
+                    <h3>Informations système</h3>
+                </div>
+                <div class="info-card-body">
+                    <div class="info-grid">
+                        <div class="info-item"><span class="info-label">Date d'activation</span><span class="info-value">{{ utilisateur.created_at|date:"d/m/Y H:i"|default:"Non disponible" }}</span></div>
+                        <div class="info-item"><span class="info-label">Dernière connexion</span><span class="info-value">{{ utilisateur.dernier_connexion|date:"d/m/Y H:i"|default:"Jamais" }}</span></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Colonne droite -->
+        <div class="profile-right-col">
+            <!-- Statistiques rapides -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <div class="stat-icon"><i class="fas fa-calendar-check"></i></div>
+                    <div class="stat-number">{{ utilisateur.dernier_connexion|date:"d/m/Y"|default:"—" }}</div>
+                    <div class="stat-label">Dernière connexion</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon"><i class="fas fa-chart-line"></i></div>
+                    <div class="stat-number">{{ total_cours }}</div>
+                    <div class="stat-label">Cours assignés</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon"><i class="fas fa-chalkboard"></i></div>
+                    <div class="stat-number">{{ total_classes }}</div>
+                    <div class="stat-label">Classes enseignées</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-icon"><i class="fas fa-users"></i></div>
+                    <div class="stat-number">{{ total_eleves }}</div>
+                    <div class="stat-label">Élèves</div>
+                </div>
+            </div>
+
+            <!-- Formulaire modification coordonnées -->
+            <div class="form-card" id="edit-coords">
+                <div class="form-card-header">
+                    <h5><i class="fas fa-edit text-primary"></i> Modifier mes coordonnées</h5>
+                </div>
+                <div class="form-card-body">
+                    <form method="POST" action="">
+                        {% csrf_token %}
+                        <div class="form-group">
+                            <label class="form-label">Téléphone</label>
+                            <input type="tel" name="telephone" class="form-control" value="{{ personne.telephone|default:'' }}" placeholder="+243 XXX XXX XXX">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Email personnel</label>
+                            <input type="email" name="email" class="form-control" value="{{ personne.email|default:'' }}" placeholder="exemple@domaine.com">
+                            <small class="text-muted">Si vous modifiez cet email, votre identifiant de connexion sera également mis à jour.</small>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Adresse physique</label>
+                            <textarea name="adresse" class="form-control" rows="2" placeholder="Votre adresse complète">{{ personne.adresse|default:'' }}</textarea>
+                        </div>
+                        <input type="hidden" name="action" value="update_coords">
+                        <button type="submit" class="btn btn-primary mt-2">
+                            <i class="fas fa-save me-2"></i> Mettre à jour
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Formulaire changement mot de passe -->
+            <div class="form-card">
+                <div class="form-card-header">
+                    <h5><i class="fas fa-key text-danger"></i> Changer mon mot de passe</h5>
+                </div>
+                <div class="form-card-body">
+                    <form method="POST" action="">
+                        {% csrf_token %}
+                        <div class="form-group">
+                            <label class="form-label">Ancien mot de passe</label>
+                            <input type="password" name="old_password" class="form-control" placeholder="Saisissez votre mot de passe actuel">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Nouveau mot de passe</label>
+                            <input type="password" name="new_password" class="form-control" placeholder="Minimum 6 caractères">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Confirmer le mot de passe</label>
+                            <input type="password" name="confirm_password" class="form-control" placeholder="Répétez le nouveau mot de passe">
+                        </div>
+                        <input type="hidden" name="action" value="change_password">
+                        <button type="submit" class="btn btn-outline-danger mt-2">
+                            <i class="fas fa-lock me-2"></i> Changer le mot de passe
+                        </button>
+                    </form>
+                    <div class="mt-3 small text-muted">
+                        <i class="fas fa-shield-alt me-1"></i> Utilisez un mot de passe fort (au moins 6 caractères).
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Formulaire caché pour l'upload de photo (via JS) -->
+<form id="photoUploadForm" method="POST" enctype="multipart/form-data" style="display:none;">
+    {% csrf_token %}
+    <input type="file" name="profile_photo" id="profile_photo_input" accept="image/jpeg,image/png,image/gif,image/webp">
+</form>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js" defer></script>
+<script src="{% static 'js/enseignant/profil.js' %}"></script>
+{% endblock %}

@@ -1,0 +1,98 @@
+{% extends "Cote/enseignant/includes/head.html" %}
+{% load static %}
+
+{% block title %}Tableau de bord enseignant | CS KABA{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{% static 'css/enseignant/dashboard_enseignant.css' %}">
+{% endblock %}
+
+{% block topbar %}
+    {# On conserve le topbar par défaut (inclut dans head.html) #}
+    {{ block.super }}
+{% endblock %}
+
+{% block body %}
+<div class="dashboard-container">
+    <!-- Cartes statistiques -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-icon bg-blue">
+                <i class="fas fa-book"></i>
+            </div>
+            <div class="stat-info">
+                <h3 id="totalCours">0</h3>
+                <p>Cours assignés</p>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon bg-green">
+                <i class="fas fa-chalkboard"></i>
+            </div>
+            <div class="stat-info">
+                <h3 id="totalClasses">0</h3>
+                <p>Classes</p>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon bg-yellow">
+                <i class="fas fa-users"></i>
+            </div>
+            <div class="stat-info">
+                <h3 id="totalEleves">0</h3>
+                <p>Élèves au total</p>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon bg-purple">
+                <i class="fas fa-crown"></i>
+            </div>
+            <div class="stat-info">
+                <h3 id="titulaireStatus">-</h3>
+                <p>Titulaire de classe</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tableau des cours -->
+    <div class="card">
+        <div class="card-header">
+            <h3><i class="fas fa-list-alt"></i> Mes cours</h3>
+            <span class="badge" id="coursCount">0</span>
+        </div>
+        <div class="table-responsive">
+            <table class="data-table" id="coursTable">
+                <thead>
+                    <tr>
+                        <th>Matière</th>
+                        <th>Classe</th>
+                        <th>Option</th>
+                        <th>Points/période</th>
+                        <th>Effectif</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="coursTableBody">
+                    <tr class="loading-row"><td colspan="6">Chargement...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Classes enseignées -->
+    <div class="card">
+        <div class="card-header">
+            <h3><i class="fas fa-school"></i> Classes où j'enseigne</h3>
+            <span class="badge" id="classesCount">0</span>
+        </div>
+        <div class="classes-list" id="classesList">
+            <p class="loading">Chargement...</p>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block footer %}
+    {{ block.super }}
+    <script src="{% static 'js/enseignant/dashboard_enseignant.js' %}"></script>
+{% endblock %}

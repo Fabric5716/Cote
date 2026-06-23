@@ -1,0 +1,177 @@
+<!-- Cote/templates/Cote/admin/detail_eleve.html -->
+{% extends "Cote/admin/includes/head.html" %}
+{% load static %}
+
+{% block title %}Détail de l'élève | CS KABA{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{% static 'css/admin/detail_eleve.css' %}">
+{% endblock %}
+
+{% block body %}
+<div class="page-container">
+    <!-- En-tête -->
+    <div class="page-header">
+        <div class="page-header-content">
+            <h1 class="page-title">
+                <i class="fas fa-id-card"></i>
+                Fiche individuelle
+            </h1>
+            <p class="page-subtitle">{{ personne.nom }} {{ personne.prenom }} | {{ eleve.matricule }}</p>
+        </div>
+        <div class="page-actions">
+            <a href="{% url 'liste_eleves' %}" class="btn-secondary">
+                <i class="fas fa-arrow-left"></i> Liste des élèves
+            </a>
+            <a href="{% url 'modifier_eleve_page' eleve.id %}" class="btn-primary">
+                <i class="fas fa-pen-alt"></i> Modifier
+            </a>
+            <a href="{% url 'recu_inscription' eleve.id %}" target="_blank" class="btn-secondary">
+                <i class="fas fa-receipt"></i> Reçu d'inscription
+            </a>
+        </div>
+    </div>
+
+    <!-- Carte principale paysage -->
+    <div class="student-profile-card">
+        <!-- Section Photo + Identité (colonne de gauche) -->
+        <div class="profile-left">
+            <div class="photo-frame">
+                {% if photo_url %}
+                    <img src="{{ photo_url }}" alt="Photo" class="student-photo">
+                {% else %}
+                    <div class="no-photo">
+                        <i class="fas fa-user-graduate fa-5x"></i>
+                        <span>Aucune photo</span>
+                    </div>
+                {% endif %}
+            </div>
+            <div class="identity-badge">
+                <h2>{{ personne.nom }} {{ personne.postnom }} {{ personne.prenom }}</h2>
+                <span class="matricule-badge">{{ eleve.matricule }}</span>
+            </div>
+        </div>
+
+        <!-- Colonne de droite : sections d'informations -->
+        <div class="profile-right">
+            <!-- Info personnelles -->
+            <div class="info-section">
+                <div class="section-title">
+                    <i class="fas fa-user-circle"></i>
+                    <h3>Identité</h3>
+                </div>
+                <div class="info-grid">
+                    <div class="info-item">
+                        <span class="info-label">Sexe</span>
+                        <span class="info-value">{{ personne.get_sexe_display|default:"Non renseigné" }}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Date de naissance</span>
+                        <span class="info-value">{{ personne.date_naissance|date:"d/m/Y"|default:"Non renseignée" }}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Lieu de naissance</span>
+                        <span class="info-value">{{ personne.lieu_naissance|default:"Non renseigné" }}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Adresse</span>
+                        <span class="info-value">{{ personne.adresse|default:"Non renseignée" }}</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Contact parent -->
+            <div class="info-section">
+                <div class="section-title">
+                    <i class="fas fa-phone-alt"></i>
+                    <h3>Parent / Tuteur</h3>
+                </div>
+                <div class="info-grid two-cols">
+                    <div class="info-item">
+                        <span class="info-label">Téléphone</span>
+                        <span class="info-value">{{ eleve.telephone_parent|default:"Non renseigné" }}</span>
+                    </div>
+                    <div class="info-item">
+                        <span class="info-label">Email</span>
+                        <span class="info-value">{{ eleve.email_parent|default:"Non renseigné" }}</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Scolarité actuelle -->
+            <div class="info-section">
+                <div class="section-title">
+                    <i class="fas fa-school"></i>
+                    <h3>Année en cours</h3>
+                </div>
+                {% if annee_active %}
+                    <div class="info-grid two-cols">
+                        <div class="info-item">
+                            <span class="info-label">Année scolaire</span>
+                            <span class="info-value"><strong>{{ annee_active.annee_scolaire }}</strong> <span class="active-badge">Active</span></span>
+                        </div>
+                        {% if inscription_actuelle %}
+                            <div class="info-item">
+                                <span class="info-label">Classe</span>
+                                <span class="info-value">{{ inscription_actuelle.id_classe.nom_classe }}</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">Type d'inscription</span>
+                                <span class="info-value">{{ inscription_actuelle.get_type_inscription_display }}</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="info-label">Date d'inscription</span>
+                                <span class="info-value">{{ inscription_actuelle.date_inscription|date:"d/m/Y" }}</span>
+                            </div>
+                        {% else %}
+                            <div class="info-item full-width">
+                                <span class="info-label">Statut</span>
+                                <span class="info-value text-warning">Non inscrit cette année</span>
+                            </div>
+                        {% endif %}
+                    </div>
+                {% else %}
+                    <div class="info-item full-width">
+                        <span class="info-label">Statut</span>
+                        <span class="info-value text-warning">Aucune année scolaire active</span>
+                    </div>
+                {% endif %}
+            </div>
+
+            <!-- Historique des inscriptions (si existant) -->
+            {% if inscriptions_passees %}
+            <div class="info-section">
+                <div class="section-title">
+                    <i class="fas fa-history"></i>
+                    <h3>Historique des inscriptions</h3>
+                </div>
+                <div class="history-wrapper">
+                    <table class="history-table">
+                        <thead>
+                            <tr>
+                                <th>Année scolaire</th>
+                                <th>Classe</th>
+                                <th>Type</th>
+                                <th>Date inscription</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for ins in inscriptions_passees %}
+                            <tr>
+                                <td>{{ ins.id_annee.annee_scolaire }}</td>
+                                <td>{{ ins.id_classe.nom_classe }}</td>
+                                <td>{{ ins.get_type_inscription_display }}</td>
+                                <td>{{ ins.date_inscription|date:"d/m/Y" }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script src="{% static 'js/admin/detail_eleve.js' %}"></script>
+{% endblock %}

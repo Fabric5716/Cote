@@ -1,0 +1,127 @@
+<!-- templates/Cote/register_admin.html -->
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Création du Directeur | CS KABA</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="/static/css/login.css">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#1e3c72',
+                        secondary: '#2a5298',
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-gradient-to-br from-primary to-secondary min-h-screen">
+    
+    <div class="container mx-auto px-4 py-8">
+        <div class="max-w-2xl mx-auto">
+            <div class="bg-white rounded-2xl shadow-2xl overflow-hidden">
+                <div class="bg-gradient-to-r from-primary to-secondary p-6 text-center">
+                    <i class="fas fa-user-shield text-5xl text-white"></i>
+                    <h2 class="text-2xl font-bold text-white mt-2">Création du Directeur des Études</h2>
+                    <p class="text-white opacity-80 text-sm">Configuration initiale du système</p>
+                </div>
+                
+                <form method="POST" class="p-8" id="registerForm">
+                    {% csrf_token %}
+                    
+                    <div class="grid md:grid-cols-2 gap-4">
+                        <div class="mb-4">
+                            <label class="block text-gray-700 font-semibold mb-2">
+                                <i class="fas fa-user mr-2 text-primary"></i>Nom
+                            </label>
+                            <input type="text" name="nom" required
+                                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-primary">
+                        </div>
+                        
+                        <div class="mb-4">
+                            <label class="block text-gray-700 font-semibold mb-2">
+                                <i class="fas fa-user mr-2 text-primary"></i>Postnom
+                            </label>
+                            <input type="text" name="postnom"
+                                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-primary">
+                        </div>
+                    </div>
+                    
+                    <div class="grid md:grid-cols-2 gap-4">
+                        <div class="mb-4">
+                            <label class="block text-gray-700 font-semibold mb-2">
+                                <i class="fas fa-user mr-2 text-primary"></i>Prénom
+                            </label>
+                            <input type="text" name="prenom" required
+                                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-primary">
+                        </div>
+                        
+                        <div class="mb-4">
+                            <label class="block text-gray-700 font-semibold mb-2">
+                                <i class="fas fa-phone mr-2 text-primary"></i>Téléphone
+                            </label>
+                            <input type="tel" name="telephone"
+                                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-primary">
+                        </div>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <label class="block text-gray-700 font-semibold mb-2">
+                            <i class="fas fa-envelope mr-2 text-primary"></i>Email
+                        </label>
+                        <input type="email" name="email" required
+                               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-primary">
+                    </div>
+                    
+                    <div class="grid md:grid-cols-2 gap-4">
+                        <div class="mb-4">
+                            <label class="block text-gray-700 font-semibold mb-2">
+                                <i class="fas fa-key mr-2 text-primary"></i>Mot de passe
+                            </label>
+                            <div class="relative">
+                                <input type="password" name="password" id="password" required
+                                       class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-primary">
+                                <button type="button" id="togglePassword1" class="absolute right-3 top-3 text-gray-500">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-4">
+                            <label class="block text-gray-700 font-semibold mb-2">
+                                <i class="fas fa-check-circle mr-2 text-primary"></i>Confirmer
+                            </label>
+                            <div class="relative">
+                                <input type="password" name="password_confirm" id="password_confirm" required
+                                       class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-primary">
+                                <button type="button" id="togglePassword2" class="absolute right-3 top-3 text-gray-500">
+                                    <i class="fas fa-eye"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <button type="submit" class="w-full bg-gradient-to-r from-primary to-secondary text-white py-3 rounded-lg font-semibold hover:shadow-lg transition">
+                        <i class="fas fa-save mr-2"></i>Créer le compte
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <script src="/static/js/login.js"></script>
+</body>
+</html>

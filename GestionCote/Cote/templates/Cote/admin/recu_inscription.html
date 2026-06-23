@@ -1,0 +1,289 @@
+<!-- Cote/templates/Cote/admin/recu_inscription.html -->
+{% load static %}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <title>Reçu d'inscription - {{ personne.nom }} {{ personne.prenom }}</title>
+    <style>
+        body {
+            font-family: "Arial", sans-serif;
+            margin: 0;
+            padding: 20px;
+            color: #000;
+            font-size: 12px;
+            background: #fff;
+        }
+        .receipt-container {
+            width: 100%;
+            max-width: 800px;
+            margin: 0 auto;
+            border: 2px solid #000;
+            padding: 20px 20px 80px 20px;
+            position: relative;
+            box-sizing: border-box;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 15px;
+        }
+        td, th {
+            vertical-align: top;
+            padding: 5px;
+        }
+        .logo-cell {
+            width: 80px;
+            text-align: center;
+        }
+        .logo-img {
+            width: 70px;
+            height: auto;
+        }
+        .header-title {
+            font-size: 14px;
+            text-align: center;
+        }
+        .header-title strong {
+            font-size: 18px;
+            display: block;
+            margin: 5px 0;
+        }
+        .receipt-number-box {
+            border: 1px solid #000;
+            border-radius: 5px;
+            padding: 10px;
+            text-align: center;
+            margin: 15px 0;
+            font-weight: bold;
+            font-size: 14px;
+            background: #f9f9f9;
+        }
+        .info-left {
+            width: 65%;
+            vertical-align: top;
+        }
+        .info-right {
+            width: 35%;
+            text-align: center;
+            vertical-align: top;
+            border-left: 1px solid #ccc;
+        }
+        .student-photo {
+            width: 120px;
+            height: 140px;
+            border: 1px solid #000;
+            object-fit: cover;
+            margin: 0 auto 10px auto;
+            display: block;
+        }
+        .no-photo {
+            width: 120px;
+            height: 140px;
+            border: 1px solid #000;
+            margin: 0 auto 10px auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: #f0f0f0;
+            font-size: 11px;
+            color: #666;
+        }
+        .label-text {
+            font-weight: bold;
+            width: 130px;
+        }
+        .montant-lettres {
+            font-style: italic;
+            text-transform: uppercase;
+            font-size: 11px;
+        }
+        .officials {
+            margin-top: 15px;
+            font-size: 11px;
+            font-weight: bold;
+        }
+        .officials div {
+            margin: 5px 0;
+        }
+        .signature-section {
+            margin-top: 60px;
+            width: 100%;
+            text-align: right;
+        }
+        .comptable-name {
+            font-size: 14px;
+            font-weight: 900;
+            color: #000;
+            margin-bottom: 20px;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+        .signature-line {
+            border-top: 2px solid #000;
+            width: 300px;
+            margin-left: auto;
+            margin-right: 0;
+            margin-top: 10px;
+        }
+        .signature-label {
+            font-size: 11px;
+            color: #333;
+            font-weight: bold;
+            text-align: right;
+            margin-top: 5px;
+        }
+        .goma-section {
+            margin-top: 30px;
+            text-align: right;
+            font-size: 12px;
+            font-style: italic;
+            color: #333;
+        }
+        .footer-section {
+            margin-top: 30px;
+            text-align: center;
+            font-size: 10px;
+            color: #666;
+            border-top: 1px dashed #999;
+            padding-top: 10px;
+        }
+        .print-button {
+            text-align: right;
+            margin-bottom: 15px;
+        }
+        .btn-print {
+            background: #1e3c72;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+        .btn-print:hover {
+            background: #2a5298;
+        }
+        @media print {
+            body {
+                padding: 0;
+                margin: 0;
+            }
+            .print-button {
+                display: none;
+            }
+            .receipt-container {
+                border: 2px solid #000;
+                padding: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="print-button">
+        <button onclick="window.print();" class="btn-print">
+            🖨️ Imprimer / PDF
+        </button>
+    </div>
+
+    <div class="receipt-container">
+        <!-- EN-TÊTE 3 COLONNES AVEC LOGOS -->
+        <table>
+            <tr>
+                <td class="logo-cell">
+                    <img src="{% static 'images/kaba.png' %}" alt="Logo" class="logo-img" onerror="this.style.display='none'">
+                </td>
+                <td class="header-title">
+                    COMPLEXE SCOLAIRE D'EXCELLENCE<br>
+                    <strong>CS KABA</strong><br>
+                    www.cskaba.edu.cd
+                </td>
+                <td class="logo-cell">
+                    <img src="{% static 'images/kaba.png' %}" alt="Logo" class="logo-img" onerror="this.style.display='none'">
+                </td>
+            </tr>
+        </table>
+
+        <!-- NUMÉRO DE REÇU -->
+        <div class="receipt-number-box">
+            {{ titre_recu }} N° {{ numero_recu }}
+        </div>
+
+        <!-- CORPS 2 COLONNES -->
+        <table>
+            <tr>
+                <!-- COLONNE GAUCHE (INFOS) -->
+                <td class="info-left">
+                    <table style="width: 100%;">
+                        <tr>
+                            <td class="label-text">NOMS :</td>
+                            <td>{{ personne.nom|upper }} {{ personne.postnom|upper }} {{ personne.prenom|upper }}</td>
+                        </tr>
+                        <tr>
+                            <td class="label-text">CLASSE :</td>
+                            <td>{{ classe_nom|upper }}</td>
+                        </tr>
+                        <tr>
+                            <td class="label-text">Montant en chiffre :</td>
+                            <td>{{ montant }} $</td>
+                        </tr>
+                        <tr>
+                            <td class="label-text">Montant en lettre :</td>
+                            <td class="montant-lettres">{{ montant_lettres }}</td>
+                        </tr>
+                        <tr>
+                            <td class="label-text">Référence n° :</td>
+                            <td>{{ numero_recu }}</td>
+                        </tr>
+                        <tr>
+                            <td class="label-text">Matricule :</td>
+                            <td>{{ eleve.matricule }}</td>
+                        </tr>
+                        <tr>
+                            <td class="label-text">Date {{ est_reinscription|yesno:"Réinscription,Inscription" }} :</td>
+                            <td>{{ date_inscription }}</td>
+                        </tr>
+                        <tr>
+                            <td class="label-text">Année Académique :</td>
+                            <td>{{ annee_scolaire }}</td>
+                        </tr>
+                    </table>
+                </td>
+
+                <!-- COLONNE DROITE (PHOTO + SIGNATURE) -->
+                <td class="info-right">
+                    {% if photo_url %}
+                        <img src="{{ photo_url }}" class="student-photo" alt="Photo élève">
+                    {% else %}
+                        <div class="no-photo">PAS DE PHOTO</div>
+                    {% endif %}
+                    <div class="officials">
+                        <div>Signature</div>
+                        <div>Le Directeur des Etudes</div>
+                    </div>
+                </td>
+            </tr>
+        </table>
+
+        <!-- NOM DU COMPTABLE + LIEU/DATE -->
+        <div class="signature-section">
+            <div class="comptable-name">{{ user_nom|upper }}</div>
+            <div class="goma-section">
+                Fait à Goma, le {{ date_inscription }}
+            </div>
+        </div>
+    </div>
+
+    <div class="footer-section">
+        ....................................................................<br>
+        Printed by Academic_Soft CS KABA
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/js/all.min.js"></script>
+    <script>
+        document.querySelector('.btn-print')?.addEventListener('click', function() {
+            window.print();
+        });
+    </script>
+</body>
+</html>

@@ -1,0 +1,46 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="fr" data-theme="{% if request.session.theme %}{{ request.session.theme }}{% else %}light{% endif %}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Dashboard | CS KABA{% endblock %}</title>
+
+    <!-- Font Awesome & Google Fonts -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <!-- Chart.js & SweetAlert2 (pour compatibilité) -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <!-- Styles principaux (thème + layout) -->
+    <link rel="stylesheet" href="{% static 'css/admin/style.css' %}">
+
+    <!-- Styles additionnels spécifiques à la page -->
+    {% block extra_head %}{% endblock %}
+</head>
+<body>
+<div class="app-wrapper">
+    {# Sidebar #}
+    {% include "Cote/admin/includes/sidebar.html" %}
+
+    <div class="main-content">
+        {# Topbar #}
+        {% include "Cote/admin/includes/topbar.html" %}
+
+        <div class="content-wrapper">
+            {% block body %}{% endblock %}
+        </div>
+
+        {# Footer #}
+        {% include "Cote/admin/includes/footer.html" %}
+    </div>
+</div>
+
+<!-- Scripts principaux -->
+<script src="{% static 'js/admin/main.js' %}"></script>
+<script src="{% static 'js/admin/includes.js' %}"></script>
+{% block extra_scripts %}{% endblock %}
+</body>
+</html>

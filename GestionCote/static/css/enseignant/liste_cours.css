@@ -1,0 +1,993 @@
+/* ========================================================================
+   LISTE DES COTES PAR COURS – STYLES PREMIUM (Écran + Impression)
+   Version 2.1 – Support du mode sombre (data-theme="dark")
+   ======================================================================== */
+
+/* --------------------------------------------
+   1. VARIABLES CSS (thème clair par défaut)
+   -------------------------------------------- */
+:root {
+    /* Couleurs primaires */
+    --primary-dark: #0f2b4f;
+    --primary: #1e3c72;
+    --primary-light: #2a5298;
+    --primary-soft: #eef2f7;
+    
+    /* Couleurs secondaires */
+    --secondary: #6c757d;
+    --success: #28a745;
+    --warning: #ffc107;
+    --danger: #dc3545;
+    --info: #17a2b8;
+    
+    /* Neutres */
+    --white: #ffffff;
+    --gray-50: #f8f9fa;
+    --gray-100: #f1f3f5;
+    --gray-200: #e9ecef;
+    --gray-300: #dee2e6;
+    --gray-400: #ced4da;
+    --gray-500: #adb5bd;
+    --gray-600: #6c757d;
+    --gray-700: #495057;
+    --gray-800: #343a40;
+    --gray-900: #212529;
+    
+    /* Ombres */
+    --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
+    --shadow-md: 0 4px 6px rgba(0,0,0,0.07);
+    --shadow-lg: 0 10px 15px rgba(0,0,0,0.1);
+    --shadow-xl: 0 20px 25px rgba(0,0,0,0.15);
+    
+    /* Bordures */
+    --radius-sm: 0.25rem;
+    --radius-md: 0.5rem;
+    --radius-lg: 0.75rem;
+    --radius-xl: 1rem;
+    
+    /* Espacements */
+    --spacing-xs: 0.25rem;
+    --spacing-sm: 0.5rem;
+    --spacing-md: 1rem;
+    --spacing-lg: 1.5rem;
+    --spacing-xl: 2rem;
+    --spacing-2xl: 3rem;
+    
+    /* Transitions */
+    --transition-fast: 0.15s ease;
+    --transition-normal: 0.25s ease;
+    
+    /* Polices */
+    --font-sans: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+    --font-mono: 'SF Mono', Monaco, Consolas, monospace;
+    
+    /* Fond et texte */
+    --body-bg: var(--gray-50);
+    --card-bg: var(--white);
+    --card-border: var(--gray-200);
+    --text-primary: var(--gray-800);
+    --text-muted: var(--gray-600);
+}
+
+/* --------------------------------------------
+   2. VARIABLES MODE SOMBRE
+   -------------------------------------------- */
+[data-theme="dark"] {
+    --primary-dark: #1e3c72;
+    --primary: #3b82f6;
+    --primary-light: #60a5fa;
+    --primary-soft: #1e293b;
+    --secondary: #475569;
+    --success: #10b981;
+    --warning: #f59e0b;
+    --danger: #ef4444;
+    --info: #3b82f6;
+    
+    --white: #1e293b;
+    --gray-50: #0f172a;
+    --gray-100: #1e293b;
+    --gray-200: #334155;
+    --gray-300: #475569;
+    --gray-400: #64748b;
+    --gray-500: #94a3b8;
+    --gray-600: #cbd5e1;
+    --gray-700: #e2e8f0;
+    --gray-800: #f1f5f9;
+    --gray-900: #f8fafc;
+    
+    --shadow-sm: 0 1px 2px rgba(0,0,0,0.3);
+    --shadow-md: 0 4px 6px rgba(0,0,0,0.4);
+    --shadow-lg: 0 10px 15px rgba(0,0,0,0.5);
+    --shadow-xl: 0 20px 25px rgba(0,0,0,0.6);
+    
+    --body-bg: #0f172a;
+    --card-bg: #1e293b;
+    --card-border: #334155;
+    --text-primary: #f1f5f9;
+    --text-muted: #94a3b8;
+}
+
+/* --------------------------------------------
+   3. RESET & BASE
+   -------------------------------------------- */
+*,
+*::before,
+*::after {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: var(--font-sans);
+    font-size: 0.9rem;
+    line-height: 1.5;
+    color: var(--text-primary);
+    background-color: var(--body-bg);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+}
+
+/* Conteneur principal */
+.container {
+    max-width: 1400px;
+    margin-left: auto;
+    margin-right: auto;
+    padding-left: var(--spacing-lg);
+    padding-right: var(--spacing-lg);
+}
+
+/* Cartes */
+.card {
+    background: var(--card-bg);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-sm);
+    border: 1px solid var(--card-border);
+    overflow: hidden;
+    margin-bottom: var(--spacing-lg);
+    transition: box-shadow var(--transition-normal);
+}
+.card:hover {
+    box-shadow: var(--shadow-md);
+}
+.card-body {
+    padding: var(--spacing-lg);
+}
+.card-header {
+    background-color: var(--gray-100);
+    border-bottom: 1px solid var(--card-border);
+    padding: var(--spacing-md) var(--spacing-lg);
+    font-weight: 600;
+    font-size: 1.1rem;
+}
+
+/* Bouton d'impression */
+.btn-print {
+    background-color: var(--primary);
+    color: var(--white);
+    border: none;
+    border-radius: var(--radius-md);
+    padding: 0.5rem 1.25rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background var(--transition-fast), transform 0.1s;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+.btn-print:hover {
+    background-color: var(--primary-light);
+    transform: translateY(-1px);
+}
+.btn-print:active {
+    transform: translateY(0);
+}
+
+/* Boutons secondaires */
+.btn-secondary {
+    background-color: var(--gray-200);
+    color: var(--gray-700);
+    border: 1px solid var(--gray-300);
+    border-radius: var(--radius-md);
+    padding: 0.5rem 1rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+.btn-secondary:hover {
+    background-color: var(--gray-300);
+}
+
+/* Formulaires */
+.form-label {
+    display: block;
+    margin-bottom: var(--spacing-xs);
+    font-weight: 600;
+    color: var(--gray-700);
+}
+.form-select {
+    width: 100%;
+    padding: 0.6rem 0.75rem;
+    font-size: 0.9rem;
+    border: 1px solid var(--gray-300);
+    border-radius: var(--radius-md);
+    background-color: var(--card-bg);
+    color: var(--text-primary);
+    transition: border-color var(--transition-fast), box-shadow var(--transition-fast);
+}
+.form-select:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(30,60,114,0.1);
+}
+.form-select:disabled {
+    background-color: var(--gray-200);
+    cursor: not-allowed;
+}
+
+/* Alertes */
+.alert {
+    padding: var(--spacing-md) var(--spacing-lg);
+    border-radius: var(--radius-md);
+    border-left: 4px solid transparent;
+    margin-bottom: var(--spacing-lg);
+}
+.alert-info {
+    background-color: #d1ecf1;
+    border-left-color: var(--info);
+    color: #0c5460;
+}
+.alert-warning {
+    background-color: #fff3cd;
+    border-left-color: var(--warning);
+    color: #856404;
+}
+.alert-danger {
+    background-color: #f8d7da;
+    border-left-color: var(--danger);
+    color: #721c24;
+}
+[data-theme="dark"] .alert-info {
+    background-color: #1e3a5f;
+    color: #e2e8f0;
+}
+[data-theme="dark"] .alert-warning {
+    background-color: #3b2e1e;
+    color: #fde68a;
+}
+[data-theme="dark"] .alert-danger {
+    background-color: #3b1e1e;
+    color: #fecaca;
+}
+
+/* Spinner de chargement */
+.loading {
+    text-align: center;
+    padding: var(--spacing-xl);
+    color: var(--primary);
+}
+.loading i {
+    font-size: 2rem;
+    margin-bottom: var(--spacing-sm);
+}
+
+/* --------------------------------------------
+   4. TABLEAU DES RESULTATS
+   -------------------------------------------- */
+.table-responsive {
+    overflow-x: auto;
+    margin-top: var(--spacing-md);
+    border-radius: var(--radius-md);
+    border: 1px solid var(--card-border);
+    background: var(--card-bg);
+}
+.liste-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.85rem;
+}
+.liste-table th,
+.liste-table td {
+    border: 1px solid var(--gray-300);
+    padding: 10px 12px;
+    vertical-align: middle;
+    text-align: center;
+}
+.liste-table th {
+    background-color: var(--gray-100);
+    color: var(--text-primary);
+    font-weight: 600;
+    border-bottom: 2px solid var(--primary);
+}
+.liste-table td:first-child {
+    font-weight: 600;
+    background-color: var(--gray-50);
+    text-align: left;
+}
+.valeur-cell {
+    font-weight: 500;
+}
+.text-danger {
+    color: var(--danger);
+    font-weight: 600;
+}
+
+/* --------------------------------------------
+   5. EN-TÊTE COURS + CLASSE
+   -------------------------------------------- */
+.cours-header {
+    text-align: center;
+    margin-bottom: var(--spacing-xl);
+    padding-bottom: var(--spacing-md);
+    border-bottom: 2px solid var(--primary-soft);
+}
+.cours-header h2 {
+    color: var(--primary-dark);
+    font-weight: 700;
+    font-size: 1.8rem;
+    margin-bottom: 0.25rem;
+}
+.cours-header h2 i {
+    color: var(--primary);
+    margin-right: 0.5rem;
+}
+.cours-header .classe-info {
+    display: block;
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: var(--primary-dark);
+    margin-bottom: 0.5rem;
+    letter-spacing: 0.5px;
+}
+@media (max-width: 768px) {
+    .cours-header h2 {
+        font-size: 1.4rem;
+    }
+    .cours-header .classe-info {
+        font-size: 1rem;
+    }
+}
+
+/* --------------------------------------------
+   6. FILTRES (row, col)
+   -------------------------------------------- */
+.row {
+    display: flex;
+    flex-wrap: wrap;
+    margin: 0 -0.5rem;
+}
+.g-3 {
+    gap: 1rem;
+}
+.col-md-4 {
+    flex: 0 0 auto;
+    width: 33.333333%;
+    padding: 0 0.5rem;
+}
+.mt-3 {
+    margin-top: var(--spacing-md);
+}
+.mt-4 {
+    margin-top: var(--spacing-lg);
+}
+.mb-4 {
+    margin-bottom: var(--spacing-lg);
+}
+.d-flex {
+    display: flex;
+}
+.justify-content-between {
+    justify-content: space-between;
+}
+.align-items-center {
+    align-items: center;
+}
+.gap-2 {
+    gap: 0.5rem;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .container {
+        padding-left: var(--spacing-md);
+        padding-right: var(--spacing-md);
+    }
+    .col-md-4 {
+        width: 100%;
+        margin-bottom: var(--spacing-sm);
+    }
+    .btn-print {
+        font-size: 0.8rem;
+    }
+}
+
+/* --------------------------------------------
+   7. IMPRESSION (inchangé, déjà adapté)
+   -------------------------------------------- */
+@media print {
+    .sidebar,
+    .topbar,
+    .btn-print,
+    .card:first-of-type,
+    #anneeSelect, #classeSelect, #coursSelect, #colonneSelect,
+    #chargerBtn, #resetBtn,
+    .form-label, .form-select,
+    .row.g-3, .row.mt-3,
+    .alert, .alert-info,
+    .loading, .loading-spinner,
+    .footer,
+    .bg-white.border-t,
+    footer,
+    .logout-btn,
+    .user-dropdown,
+    .dropdown-menu,
+    .menu-item,
+    .sidebar-header,
+    .sidebar-footer,
+    .menu-section,
+    .date-time,
+    .notification-btn,
+    .hamburger,
+    .topbar-actions,
+    .page-title p,
+    .d-flex.justify-content-between,
+    .page-header,
+    h1,
+    [class*="modal"],
+    [class*="dropdown"],
+    .btn,
+    button:not(.no-print) {
+        display: none !important;
+    }
+    .main-content {
+        margin: 0 !important;
+        padding: 0 !important;
+        width: 100% !important;
+        position: static !important;
+    }
+    .container {
+        max-width: 100% !important;
+        padding: 0 !important;
+        margin: 0 !important;
+    }
+    #resultContainer {
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+    .cours-header {
+        display: block !important;
+        text-align: center;
+        margin: 20pt 0 15pt 0 !important;
+        border-bottom: 1pt solid #000;
+    }
+    .cours-header .classe-info {
+        display: block !important;
+        font-size: 14pt !important;
+        font-weight: bold;
+        color: #000 !important;
+        margin-bottom: 8pt;
+    }
+    .cours-header h2 {
+        display: block !important;
+        font-size: 18pt !important;
+        font-weight: bold;
+        color: #000 !important;
+        margin: 0;
+    }
+    .table-responsive {
+        overflow: visible !important;
+        border: none !important;
+        background: transparent !important;
+        margin-top: 0 !important;
+    }
+    .liste-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 10pt;
+        page-break-inside: avoid;
+    }
+    .liste-table th,
+    .liste-table td {
+        border: 1px solid #000 !important;
+        padding: 6pt 8pt !important;
+        text-align: center;
+    }
+    .liste-table th {
+        background-color: #f0f0f0 !important;
+        color: #000 !important;
+        font-weight: bold;
+        print-color-adjust: exact;
+        -webkit-print-color-adjust: exact;
+    }
+    .liste-table td:first-child {
+        text-align: left;
+        background-color: #fafafa !important;
+        font-weight: 600;
+    }
+    .valeur-cell {
+        font-weight: normal;
+    }
+    .liste-table tr {
+        page-break-inside: avoid;
+    }
+    .liste-table thead {
+        display: table-header-group;
+    }
+    @page {
+        margin: 1.5cm;
+        size: portrait;
+    }
+    body {
+        background: white;
+        margin: 0;
+        padding: 0;
+    }
+}
+
+/* --------------------------------------------
+   8. ANIMATIONS & DIVERS
+   -------------------------------------------- */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(8px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+#resultContainer {
+    animation: fadeIn 0.3s ease-out;
+}
+.liste-table tbody tr:hover {
+    background-color: rgba(30,60,114,0.03);
+    transition: background var(--transition-fast);
+}
+[data-theme="dark"] .liste-table tbody tr:hover {
+    background-color: rgba(59,130,246,0.1);
+}
+
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+::-webkit-scrollbar-track {
+    background: var(--gray-200);
+    border-radius: 10px;
+}
+::-webkit-scrollbar-thumb {
+    background: var(--gray-500);
+    border-radius: 10px;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: var(--gray-600);
+}
+
+/* --------------------------------------------
+   9. ZONE D'INFORMATION SUPPLÉMENTAIRE (optionnelle)
+   -------------------------------------------- */
+.selection-info {
+    margin-bottom: 1.5rem;
+}
+.info-card {
+    background: var(--card-bg);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--card-border);
+    padding: 1rem 1.5rem;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1.5rem;
+    box-shadow: var(--shadow-sm);
+}
+.info-row {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.9rem;
+}
+.info-label {
+    font-weight: 600;
+    color: var(--primary-dark);
+}
+.info-value {
+    color: var(--text-primary);
+    background: var(--gray-100);
+    padding: 0.2rem 0.6rem;
+    border-radius: 20px;
+}
+@media print {
+    .selection-info {
+        display: block !important;
+        margin-bottom: 15pt;
+    }
+    .info-card {
+        border: 1px solid #ccc;
+        background: white;
+        box-shadow: none;
+        padding: 8pt;
+    }
+    .info-value {
+        background: #f0f0f0;
+    }
+}
+
+/* --------------------------------------------
+   10. UTILITAIRES
+   -------------------------------------------- */
+.text-center { text-align: center; }
+.text-left { text-align: left; }
+.text-right { text-align: right; }
+.text-muted { color: var(--text-muted); }
+.text-primary { color: var(--primary); }
+.text-success { color: var(--success); }
+.text-danger { color: var(--danger); }
+
+.mt-1 { margin-top: var(--spacing-xs); }
+.mt-2 { margin-top: var(--spacing-sm); }
+.mt-3 { margin-top: var(--spacing-md); }
+.mt-4 { margin-top: var(--spacing-lg); }
+.mb-1 { margin-bottom: var(--spacing-xs); }
+.mb-2 { margin-bottom: var(--spacing-sm); }
+.mb-3 { margin-bottom: var(--spacing-md); }
+.mb-4 { margin-bottom: var(--spacing-lg); }
+.p-1 { padding: var(--spacing-xs); }
+.p-2 { padding: var(--spacing-sm); }
+.p-3 { padding: var(--spacing-md); }
+
+/* --------------------------------------------
+   FIN
+   -------------------------------------------- */
+   /* ============================================
+   RESPONSIVE DESIGN PREMIUM - MOBILE FIRST
+   Ajoutez ce bloc à la fin de votre fichier CSS
+   pour garantir une expérience fluide sur tous les appareils.
+   ============================================ */
+
+/* -------------------- VARIABLES -------------------- */
+:root {
+    --breakpoint-mobile: 767px;
+    --breakpoint-tablette: 768px;
+    --breakpoint-desktop: 1024px;
+    --breakpoint-large: 1440px;
+
+    --font-size-base: calc(16px + 0.2vw);
+    --font-size-h1: clamp(1.8rem, 5vw, 2.5rem);
+    --font-size-h2: clamp(1.5rem, 4vw, 2rem);
+    --font-size-h3: clamp(1.25rem, 3vw, 1.75rem);
+    --font-size-body: clamp(0.95rem, 2vw, 1rem);
+    --font-size-small: clamp(0.8rem, 1.5vw, 0.9rem);
+
+    --spacing-xs: clamp(0.25rem, 1vw, 0.5rem);
+    --spacing-sm: clamp(0.5rem, 2vw, 0.75rem);
+    --spacing-md: clamp(0.75rem, 3vw, 1.25rem);
+    --spacing-lg: clamp(1rem, 4vw, 1.5rem);
+    --spacing-xl: clamp(1.5rem, 5vw, 2.5rem);
+
+    --border-radius-sm: 0.25rem;
+    --border-radius-md: 0.5rem;
+    --border-radius-lg: 1rem;
+
+    --transition-default: all 0.25s ease-in-out;
+    --shadow-sm: 0 2px 4px rgba(0,0,0,0.05);
+    --shadow-md: 0 4px 8px rgba(0,0,0,0.08);
+    --shadow-lg: 0 8px 16px rgba(0,0,0,0.1);
+}
+
+/* -------------------- GLOBALS -------------------- */
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
+html {
+    scroll-behavior: smooth;
+    -webkit-text-size-adjust: 100%;
+    -webkit-tap-highlight-color: transparent;
+}
+
+body {
+    font-size: var(--font-size-body);
+    line-height: 1.5;
+    overflow-x: hidden;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+}
+
+img,
+picture,
+video,
+canvas,
+svg {
+    max-width: 100%;
+    height: auto;
+    display: block;
+}
+
+/* Amélioration des zones cliquables sur mobile (taille minimum 44px) */
+button,
+a,
+input[type="button"],
+input[type="submit"],
+.btn,
+[role="button"],
+.nav-link,
+.menu-item {
+    min-height: 44px;
+    min-width: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Suppression des scrollbars horizontales intempestives */
+.container,
+.row,
+[class*="col-"],
+.content-wrapper,
+.main-content {
+    max-width: 100%;
+    overflow-x: hidden;
+}
+
+/* Tableaux et iframes responsives */
+table,
+iframe,
+.video-container,
+.responsive-table {
+    width: 100%;
+    overflow-x: auto;
+    display: block;
+}
+
+table {
+    border-collapse: collapse;
+    border-spacing: 0;
+}
+
+/* Liens et transitions douces */
+a,
+button,
+.btn,
+.card,
+input,
+select,
+textarea {
+    transition: var(--transition-default);
+}
+
+/* Ombres légères premium */
+.card,
+.card-premium,
+.modal,
+.dropdown-menu {
+    box-shadow: var(--shadow-sm);
+}
+
+.card-premium:hover,
+.btn-premium:hover {
+    box-shadow: var(--shadow-md);
+}
+
+/* -------------------- TYPOGRAPHIE FLUIDE -------------------- */
+h1, .h1 {
+    font-size: var(--font-size-h1);
+    margin-bottom: var(--spacing-md);
+}
+h2, .h2 {
+    font-size: var(--font-size-h2);
+    margin-bottom: var(--spacing-sm);
+}
+h3, .h3 {
+    font-size: var(--font-size-h3);
+    margin-bottom: var(--spacing-sm);
+}
+p, .text-body {
+    font-size: var(--font-size-body);
+    margin-bottom: var(--spacing-md);
+}
+small, .text-small {
+    font-size: var(--font-size-small);
+}
+
+/* -------------------- GRILLES RESPONSIVES -------------------- */
+.grid-responsive {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: var(--spacing-lg);
+}
+
+/* Flexbox pour les listes */
+.flex-responsive {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--spacing-md);
+    align-items: center;
+    justify-content: flex-start;
+}
+
+/* Espacements adaptables */
+.section {
+    padding: var(--spacing-xl) var(--spacing-md);
+}
+.container-fluid {
+    padding-left: var(--spacing-md);
+    padding-right: var(--spacing-md);
+}
+
+/* -------------------- MOBILE FIRST (0 à 767px) -------------------- */
+/* Rien de spécial ici car tout est déjà mobile par défaut.
+   On va juste renforcer certains comportements tactiles et marges */
+@media (max-width: 767px) {
+    body {
+        -webkit-tap-highlight-color: rgba(0,0,0,0.05);
+    }
+
+    /* Réduction des paddings sur mobile */
+    .card-body-premium,
+    .content-wrapper,
+    .main-content {
+        padding-left: var(--spacing-sm);
+        padding-right: var(--spacing-sm);
+    }
+
+    /* Empilement des éléments flex sur mobile */
+    .flex-responsive {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    /* Boutons pleine largeur sur mobile (optionnel, mais souvent préférable) */
+    .btn-premium,
+    button[type="submit"],
+    .btn {
+        width: 100%;
+        margin-bottom: var(--spacing-sm);
+    }
+
+    /* Ajustement des modals et dropdowns pour qu'ils ne dépassent pas */
+    .modal-dialog {
+        margin: var(--spacing-md);
+        max-width: calc(100% - 2 * var(--spacing-md));
+    }
+}
+
+/* -------------------- TABLETTES (768px à 1023px) -------------------- */
+@media (min-width: 768px) and (max-width: 1023px) {
+    .grid-responsive {
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: var(--spacing-lg);
+    }
+
+    .flex-responsive {
+        flex-direction: row;
+        flex-wrap: wrap;
+    }
+
+    .btn-premium,
+    button[type="submit"] {
+        width: auto;
+        min-width: 120px;
+    }
+
+    /* Légère augmentation des marges */
+    .container-fluid {
+        padding-left: var(--spacing-lg);
+        padding-right: var(--spacing-lg);
+    }
+}
+
+/* -------------------- DESKTOP (≥1024px) -------------------- */
+@media (min-width: 1024px) {
+    .grid-responsive {
+        grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+        gap: var(--spacing-xl);
+    }
+
+    body {
+        font-size: clamp(1rem, 1vw, 1.125rem);
+    }
+
+    /* Centrage du contenu pour les grands écrans */
+    .container {
+        max-width: 1200px;
+        margin-left: auto;
+        margin-right: auto;
+    }
+}
+
+/* -------------------- GRANDS ÉCRANS (≥1440px) -------------------- */
+@media (min-width: 1440px) {
+    .container {
+        max-width: 1400px;
+    }
+
+    body {
+        font-size: 1.125rem;
+    }
+
+    .grid-responsive {
+        grid-template-columns: repeat(4, 1fr);
+    }
+
+    /* Limitation de la largeur des colonnes pour ne pas avoir des lignes trop longues */
+    .col-lg-4, .col-md-6 {
+        max-width: 380px;
+    }
+}
+
+/* -------------------- UTILITAIRES RESPONSIVES -------------------- */
+/* Masquer/afficher selon écran */
+.hide-on-mobile {
+    display: none;
+}
+@media (min-width: 768px) {
+    .hide-on-mobile {
+        display: block;
+    }
+    .show-on-mobile-only {
+        display: none;
+    }
+}
+@media (max-width: 767px) {
+    .show-on-mobile-only {
+        display: block;
+    }
+    .hide-on-desktop {
+        display: none;
+    }
+}
+
+/* Texte centré sur mobile, aligné sur desktop */
+@media (max-width: 767px) {
+    .text-center-mobile {
+        text-align: center;
+    }
+}
+
+/* Ajustement des images pour éviter les débordements */
+img.fluid {
+    width: 100%;
+    height: auto;
+    object-fit: cover;
+}
+
+/* Empêcher le défilement horizontal forcé */
+html, body {
+    overflow-x: hidden;
+    position: relative;
+}
+
+/* Bordures et ombres cohérentes */
+.card, .card-premium, .modal-content {
+    border-radius: var(--border-radius-md);
+    overflow: hidden;
+}
+
+.btn-premium, button, input, select, textarea {
+    border-radius: var(--border-radius-sm);
+}
+
+/* Amélioration du défilement tactile sur iOS */
+* {
+    -webkit-overflow-scrolling: touch;
+}
+
+/* Scrollbar personnalisée (optionnel, plus premium) */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 10px;
+}
+::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 10px;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+}

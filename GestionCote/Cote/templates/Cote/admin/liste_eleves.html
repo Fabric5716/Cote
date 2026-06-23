@@ -1,0 +1,151 @@
+<!-- Cote/templates/Cote/admin/liste_eleves.html -->
+{% extends "Cote/admin/includes/head.html" %}
+{% load static %}
+
+{% block title %}Liste des élèves | CS KABA{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{% static 'css/admin/liste_eleves.css' %}">
+{% endblock %}
+
+{% block body %}
+<div class="page-container">
+    <!-- En-tête -->
+    <div class="page-header">
+        <div class="page-header-content">
+            <h1 class="page-title">
+                <i class="fas fa-users-viewfinder"></i>
+                Annuaire des élèves
+            </h1>
+            <p class="page-subtitle">{{ eleves|length }} élève(s) inscrit(s) cette année</p>
+        </div>
+        <div class="page-actions">
+            <a href="{% url 'dashboard_de' %}" class="btn-secondary">
+                <i class="fas fa-chalkboard"></i> Tableau de bord
+            </a>
+            <a href="{% url 'ajouter_eleve_page' %}" class="btn-primary">
+                <i class="fas fa-user-plus"></i> Nouvel élève
+            </a>
+        </div>
+    </div>
+
+    <!-- Carte de filtres -->
+    <div class="filters-card">
+        <form method="get" id="filterForm">
+            <div class="filters-row">
+                <div class="filter-group">
+                    <label><i class="fas fa-sync-alt"></i> Cycle</label>
+                    <select name="cycle" id="cycleFilter">
+                        <option value="">Tous les cycles</option>
+                        {% for cycle in cycles %}
+                        <option value="{{ cycle.value }}" {% if cycle_selected == cycle.value %}selected{% endif %}>{{ cycle.label }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label><i class="fas fa-chalkboard"></i> Classe</label>
+                    <select name="classe" id="classeFilter">
+                        <option value="">Toutes les classes</option>
+                        {% for classe in classes %}
+                        <option value="{{ classe.id }}" {% if classe_selected == classe.id %}selected{% endif %}>{{ classe.nom_classe }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label><i class="fas fa-book"></i> Option</label>
+                    <select name="option" id="optionFilter">
+                        <option value="">Toutes les options</option>
+                        {% for option in options %}
+                        <option value="{{ option.id }}" {% if option_selected == option.id %}selected{% endif %}>{{ option.nom_option }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="filter-group actions-group">
+                    <label>&nbsp;</label>
+                    <button type="submit" class="btn-filter">
+                        <i class="fas fa-sliders-h"></i> Appliquer
+                    </button>
+                    <a href="{% url 'liste_eleves' %}" class="btn-reset">
+                        <i class="fas fa-eraser"></i> Réinitialiser
+                    </a>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- Tableau des élèves -->
+    <div class="table-container">
+        <div class="table-responsive">
+            <table class="data-table">
+                <thead>
+                    <tr>
+                        <th>Photo</th>
+                        <th>Matricule</th>
+                        <th>Nom complet</th>
+                        <th>Sexe</th>
+                        <th>Classe</th>
+                        <th>Cycle</th>
+                        <th>Option</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for eleve in eleves %}
+                    <tr>
+                        <td class="photo-cell">
+                            {% if eleve.photo %}
+                                <img src="{{ eleve.photo }}" alt="Photo" class="thumbnail" loading="lazy">
+                            {% else %}
+                                <div class="no-photo"><i class="fas fa-user-circle"></i></div>
+                            {% endif %}
+                         </td>
+                        <td class="matricule-cell"><strong>{{ eleve.matricule }}</strong></td>
+                        <td class="name-cell">{{ eleve.nom }} {{ eleve.postnom }} {{ eleve.prenom }}</td>
+                        <td class="sexe-cell">{{ eleve.sexe }}</td>
+                        <td class="classe-cell">{{ eleve.classe_nom }}</td>
+                        <td class="cycle-cell">
+                            {% if eleve.est_cycle_orientation %}
+                                <span class="cycle-badge co">C.O</span>
+                            {% else %}
+                                <span class="cycle-badge sec">Secondaire</span>
+                            {% endif %}
+                        </td>
+                        <td class="option-cell">{{ eleve.option_nom|default:"—" }}</td>
+                        <td class="actions-cell">
+                            <a href="{% url 'detail_eleve' eleve.id %}" class="action-btn view" title="Fiche détaillée">
+                                <i class="fas fa-id-card"></i>
+                            </a>
+                            <a href="{% url 'modifier_eleve_page' eleve.id %}" class="action-btn edit" title="Modifier">
+                                <i class="fas fa-pen-alt"></i>
+                            </a>
+                            <a href="{% url 'bulletin_eleve' eleve.id %}" class="action-btn bulletin" title="Bulletin" target="_blank">
+                                <i class="fas fa-file-alt"></i>
+                            </a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr class="empty-row">
+                        <td colspan="8">
+                            <div class="empty-state">
+                                <i class="fas fa-user-slash"></i>
+                                <p>Aucun élève ne correspond aux critères</p>
+                                <a href="{% url 'ajouter_eleve_page' %}" class="empty-action-btn">
+                                    <i class="fas fa-plus-circle"></i> Ajouter un élève
+                                </a>
+                            </div>
+                        </table>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <div class="table-footer">
+            <div class="table-info">
+                Affichage de <strong>{{ eleves|length }}</strong> élève(s)
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="{% static 'js/admin/liste_eleves.js' %}"></script>
+{% endblock %}

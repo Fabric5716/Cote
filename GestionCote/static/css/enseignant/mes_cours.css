@@ -1,0 +1,782 @@
+/* ============================================
+   MES COURS - ENSEIGNANT
+   Design premium | Support Dark Mode | Animations | Responsive
+   ============================================ */
+
+/* ---------- Variables globales (clair par défaut) ---------- */
+:root {
+    --primary: #1e3c72;
+    --primary-dark: #0f2a4f;
+    --primary-light: #2a5298;
+    --secondary: #6c757d;
+    --success: #28a745;
+    --info: #17a2b8;
+    --warning: #ffc107;
+    --danger: #dc3545;
+    --light: #f8f9fa;
+    --dark: #1e2a3a;
+    --gray-100: #f8f9fa;
+    --gray-200: #e9ecef;
+    --gray-300: #dee2e6;
+    --gray-400: #ced4da;
+    --gray-500: #adb5bd;
+    --gray-600: #6c757d;
+    --gray-700: #495057;
+    --gray-800: #343a40;
+    --gray-900: #212529;
+    
+    /* Thème clair */
+    --bg-body: linear-gradient(135deg, #f5f7fc 0%, #eef2f7 100%);
+    --card-bg: rgba(255, 255, 255, 0.95);
+    --card-header-bg: linear-gradient(135deg, rgba(30, 60, 114, 0.03), rgba(42, 82, 152, 0.05));
+    --table-header-bg: linear-gradient(135deg, #f9fafc, #f1f4f9);
+    --table-border: var(--gray-200);
+    --text-muted: #6c757d;
+    --badge-bg: rgba(108, 117, 125, 0.08);
+    --badge-border: rgba(108, 117, 125, 0.2);
+    --hover-bg: rgba(30, 60, 114, 0.03);
+    --shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.08);
+    --shadow-hover: 0 1rem 2.5rem rgba(0, 0, 0, 0.15);
+    --scrollbar-track: var(--gray-200);
+    --scrollbar-thumb: var(--primary-light);
+}
+
+/* ---------- Variables pour le mode sombre ---------- */
+[data-theme="dark"] {
+    --primary: #3a6ea5;
+    --primary-dark: #2c5282;
+    --primary-light: #4a7eb5;
+    --light: #1e2a3a;
+    --dark: #f8f9fa;
+    --gray-100: #2d3748;
+    --gray-200: #374151;
+    --gray-300: #4a5568;
+    --gray-800: #f1f5f9;
+    
+    --bg-body: #0f172a;
+    --card-bg: #1e293b;
+    --card-header-bg: rgba(255, 255, 255, 0.02);
+    --table-header-bg: #1f2229;
+    --table-border: #2d2f36;
+    --text-muted: #94a3b8;
+    --badge-bg: rgba(100, 116, 139, 0.2);
+    --badge-border: rgba(100, 116, 139, 0.3);
+    --hover-bg: rgba(255, 255, 255, 0.03);
+    --shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.3);
+    --shadow-hover: 0 1rem 2rem rgba(0, 0, 0, 0.4);
+    --scrollbar-track: #2d2f36;
+    --scrollbar-thumb: #4a7eb5;
+}
+
+/* ---------- Reset & base ---------- */
+*,
+*::before,
+*::after {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Inter', 'Poppins', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+    background: var(--bg-body);
+    color: var(--gray-800);
+    min-height: 100vh;
+}
+
+/* ---------- Animations globales ---------- */
+@keyframes fadeInUp {
+    0% { opacity: 0; transform: translateY(30px); }
+    100% { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fadeInLeft {
+    0% { opacity: 0; transform: translateX(-20px); }
+    100% { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes pulseGlow {
+    0% { box-shadow: 0 0 0 0 rgba(30, 60, 114, 0.4); }
+    70% { box-shadow: 0 0 0 10px rgba(30, 60, 114, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(30, 60, 114, 0); }
+}
+
+@keyframes shimmer {
+    0% { background-position: -1000px 0; }
+    100% { background-position: 1000px 0; }
+}
+
+/* ---------- Conteneur principal ---------- */
+.container-fluid {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 2rem 1.5rem;
+}
+
+/* ---------- En-tête premium ---------- */
+.display-6 {
+    font-size: 2rem;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+}
+
+.text-gradient {
+    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-light) 100%);
+    background-clip: text;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    display: inline-block;
+}
+
+h1 i {
+    background: linear-gradient(135deg, var(--primary), var(--primary-light));
+    background-clip: text;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    font-size: 2.2rem;
+}
+
+/* Badge année */
+.badge.bg-primary {
+    background: linear-gradient(135deg, var(--primary), var(--primary-light)) !important;
+    font-weight: 500;
+    font-size: 0.9rem;
+    letter-spacing: 0.3px;
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    backdrop-filter: blur(4px);
+}
+
+.badge.bg-warning {
+    background: linear-gradient(135deg, #f59e0b, #d97706) !important;
+    font-weight: 500;
+}
+
+/* ---------- Carte principale Glassmorphism ---------- */
+.card {
+    border: none;
+    border-radius: 1rem;
+    background: var(--card-bg);
+    backdrop-filter: blur(2px);
+    transition: transform 0.3s cubic-bezier(0.25, 0.8, 0.25, 1), box-shadow 0.3s ease;
+    overflow: hidden;
+    box-shadow: var(--shadow);
+}
+
+.card:hover {
+    transform: translateY(-6px);
+    box-shadow: var(--shadow-hover);
+}
+
+.card-header {
+    background: var(--card-header-bg);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+.card-header .rounded-circle {
+    background: linear-gradient(135deg, rgba(30, 60, 114, 0.1), rgba(42, 82, 152, 0.15));
+    transition: transform 0.3s ease;
+}
+
+.card:hover .rounded-circle {
+    transform: scale(1.05);
+}
+
+.card-header h5 {
+    font-size: 1.25rem;
+    color: var(--primary-dark);
+}
+
+.card-footer {
+    background: rgba(0, 0, 0, 0.01);
+    font-size: 0.75rem;
+    border-top: 1px solid rgba(0, 0, 0, 0.05);
+    color: var(--text-muted);
+}
+
+/* ---------- Table design ultra premium ---------- */
+.table-responsive {
+    border-radius: 0 0 1rem 1rem;
+    overflow-x: auto;
+}
+
+.table {
+    margin-bottom: 0;
+    font-size: 0.95rem;
+    color: var(--gray-800);
+}
+
+.table thead th {
+    background: var(--table-header-bg);
+    color: var(--primary-dark);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    font-size: 0.75rem;
+    padding: 1rem 0.75rem;
+    border-bottom: 2px solid rgba(30, 60, 114, 0.2);
+    position: relative;
+}
+
+.table thead th i {
+    margin-right: 0.5rem;
+    font-size: 0.85rem;
+    opacity: 0.8;
+}
+
+.table tbody td {
+    padding: 1rem 0.75rem;
+    vertical-align: middle;
+    border-bottom: 1px solid var(--table-border);
+    transition: all 0.2s ease;
+}
+
+/* Lignes avec animation */
+.course-row {
+    animation: fadeInUp 0.5s ease forwards;
+    animation-delay: calc(var(--row-index, 0) * 0.03s);
+    opacity: 0;
+    transform: translateY(20px);
+}
+
+.course-row:hover {
+    background-color: var(--hover-bg);
+    transform: scale(1.01);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+    z-index: 2;
+    position: relative;
+}
+
+/* Badge effectif */
+.badge.rounded-pill {
+    font-weight: 500;
+    padding: 0.4rem 1rem;
+    background: var(--badge-bg);
+    border: 1px solid var(--badge-border);
+    transition: all 0.2s ease;
+    color: var(--gray-800);
+}
+
+.course-row:hover .badge.rounded-pill {
+    background: linear-gradient(135deg, rgba(30, 60, 114, 0.1), rgba(42, 82, 152, 0.15));
+    border-color: rgba(30, 60, 114, 0.3);
+}
+
+/* ---------- Bouton premium ---------- */
+.btn-primary {
+    background: linear-gradient(135deg, var(--primary), var(--primary-light));
+    border: none;
+    border-radius: 2rem;
+    padding: 0.45rem 1.2rem;
+    font-weight: 500;
+    font-size: 0.8rem;
+    letter-spacing: 0.3px;
+    transition: all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1);
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+    color: white;
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px);
+    background: linear-gradient(135deg, var(--primary-dark), var(--primary));
+    box-shadow: 0 6px 14px rgba(30, 60, 114, 0.3);
+    color: white;
+}
+
+.btn-primary:active {
+    transform: translateY(1px);
+}
+
+.btn-primary i {
+    font-size: 0.8rem;
+    transition: transform 0.2s;
+}
+
+.btn-primary:hover i {
+    transform: translateX(3px);
+}
+
+/* ---------- Message vide ---------- */
+.empty-message {
+    animation: fadeInUp 0.5s ease;
+    background: linear-gradient(135deg, rgba(0,0,0,0.02), rgba(0,0,0,0.01));
+    border-radius: 1rem;
+    margin: 1rem;
+}
+
+/* ---------- Loading skeleton (optionnel) ---------- */
+.skeleton {
+    background: linear-gradient(90deg, var(--gray-200) 25%, var(--gray-300) 50%, var(--gray-200) 75%);
+    background-size: 1000px 100%;
+    animation: shimmer 1.5s infinite;
+    border-radius: 0.5rem;
+    height: 2rem;
+}
+
+/* ---------- Responsive design ---------- */
+@media (max-width: 1200px) {
+    .container-fluid {
+        padding: 1.5rem;
+    }
+}
+
+@media (max-width: 992px) {
+    .display-6 {
+        font-size: 1.6rem;
+    }
+    .table thead th,
+    .table tbody td {
+        padding: 0.75rem 0.5rem;
+        font-size: 0.85rem;
+    }
+    .btn-primary {
+        padding: 0.3rem 1rem;
+        font-size: 0.75rem;
+    }
+}
+
+@media (max-width: 768px) {
+    .container-fluid {
+        padding: 1rem;
+    }
+    .card-header {
+        flex-direction: column;
+        align-items: flex-start !important;
+        text-align: left;
+    }
+    .card-header .d-flex {
+        width: 100%;
+    }
+    .card-header .ms-auto {
+        margin-left: 0 !important;
+        margin-top: 0.75rem;
+    }
+    .table thead {
+        display: none;
+    }
+    .table tbody tr {
+        display: block;
+        margin-bottom: 1rem;
+        border: 1px solid var(--table-border);
+        border-radius: 1rem;
+        padding: 0.75rem;
+        background: var(--card-bg);
+        box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+    }
+    .table tbody td {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 0.5rem;
+        border-bottom: 1px solid var(--table-border);
+    }
+    .table tbody td:last-child {
+        border-bottom: none;
+    }
+    .table tbody td::before {
+        content: attr(data-label);
+        font-weight: 600;
+        width: 40%;
+        color: var(--primary);
+    }
+    .table tbody td.text-end {
+        text-align: left !important;
+    }
+    .btn-primary {
+        width: 100%;
+        justify-content: center;
+    }
+}
+
+@media (max-width: 576px) {
+    .display-6 {
+        font-size: 1.4rem;
+    }
+    .badge.bg-primary {
+        font-size: 0.7rem;
+        padding: 0.3rem 0.8rem;
+    }
+    .card-header .rounded-circle {
+        width: 40px !important;
+        height: 40px !important;
+    }
+}
+
+/* ---------- Scrollbar personnalisée ---------- */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+::-webkit-scrollbar-track {
+    background: var(--scrollbar-track);
+    border-radius: 10px;
+}
+::-webkit-scrollbar-thumb {
+    background: var(--scrollbar-thumb);
+    border-radius: 10px;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: var(--primary-dark);
+}
+
+/* ---------- Effets de focus ---------- */
+.btn:focus-visible,
+a:focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: 2px;
+    border-radius: 0.25rem;
+}
+
+/* ---------- Fin du style premium ---------- */
+/* ============================================
+   RESPONSIVE DESIGN PREMIUM - MOBILE FIRST
+   Ajoutez ce bloc à la fin de votre fichier CSS
+   pour garantir une expérience fluide sur tous les appareils.
+   ============================================ */
+
+/* -------------------- VARIABLES -------------------- */
+:root {
+    --breakpoint-mobile: 767px;
+    --breakpoint-tablette: 768px;
+    --breakpoint-desktop: 1024px;
+    --breakpoint-large: 1440px;
+
+    --font-size-base: calc(16px + 0.2vw);
+    --font-size-h1: clamp(1.8rem, 5vw, 2.5rem);
+    --font-size-h2: clamp(1.5rem, 4vw, 2rem);
+    --font-size-h3: clamp(1.25rem, 3vw, 1.75rem);
+    --font-size-body: clamp(0.95rem, 2vw, 1rem);
+    --font-size-small: clamp(0.8rem, 1.5vw, 0.9rem);
+
+    --spacing-xs: clamp(0.25rem, 1vw, 0.5rem);
+    --spacing-sm: clamp(0.5rem, 2vw, 0.75rem);
+    --spacing-md: clamp(0.75rem, 3vw, 1.25rem);
+    --spacing-lg: clamp(1rem, 4vw, 1.5rem);
+    --spacing-xl: clamp(1.5rem, 5vw, 2.5rem);
+
+    --border-radius-sm: 0.25rem;
+    --border-radius-md: 0.5rem;
+    --border-radius-lg: 1rem;
+
+    --transition-default: all 0.25s ease-in-out;
+    --shadow-sm: 0 2px 4px rgba(0,0,0,0.05);
+    --shadow-md: 0 4px 8px rgba(0,0,0,0.08);
+    --shadow-lg: 0 8px 16px rgba(0,0,0,0.1);
+}
+
+/* -------------------- GLOBALS -------------------- */
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
+html {
+    scroll-behavior: smooth;
+    -webkit-text-size-adjust: 100%;
+    -webkit-tap-highlight-color: transparent;
+}
+
+body {
+    font-size: var(--font-size-body);
+    line-height: 1.5;
+    overflow-x: hidden;
+    width: 100%;
+    margin: 0;
+    padding: 0;
+}
+
+img,
+picture,
+video,
+canvas,
+svg {
+    max-width: 100%;
+    height: auto;
+    display: block;
+}
+
+/* Amélioration des zones cliquables sur mobile (taille minimum 44px) */
+button,
+a,
+input[type="button"],
+input[type="submit"],
+.btn,
+[role="button"],
+.nav-link,
+.menu-item {
+    min-height: 44px;
+    min-width: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Suppression des scrollbars horizontales intempestives */
+.container,
+.row,
+[class*="col-"],
+.content-wrapper,
+.main-content {
+    max-width: 100%;
+    overflow-x: hidden;
+}
+
+/* Tableaux et iframes responsives */
+table,
+iframe,
+.video-container,
+.responsive-table {
+    width: 100%;
+    overflow-x: auto;
+    display: block;
+}
+
+table {
+    border-collapse: collapse;
+    border-spacing: 0;
+}
+
+/* Liens et transitions douces */
+a,
+button,
+.btn,
+.card,
+input,
+select,
+textarea {
+    transition: var(--transition-default);
+}
+
+/* Ombres légères premium */
+.card,
+.card-premium,
+.modal,
+.dropdown-menu {
+    box-shadow: var(--shadow-sm);
+}
+
+.card-premium:hover,
+.btn-premium:hover {
+    box-shadow: var(--shadow-md);
+}
+
+/* -------------------- TYPOGRAPHIE FLUIDE -------------------- */
+h1, .h1 {
+    font-size: var(--font-size-h1);
+    margin-bottom: var(--spacing-md);
+}
+h2, .h2 {
+    font-size: var(--font-size-h2);
+    margin-bottom: var(--spacing-sm);
+}
+h3, .h3 {
+    font-size: var(--font-size-h3);
+    margin-bottom: var(--spacing-sm);
+}
+p, .text-body {
+    font-size: var(--font-size-body);
+    margin-bottom: var(--spacing-md);
+}
+small, .text-small {
+    font-size: var(--font-size-small);
+}
+
+/* -------------------- GRILLES RESPONSIVES -------------------- */
+.grid-responsive {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: var(--spacing-lg);
+}
+
+/* Flexbox pour les listes */
+.flex-responsive {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--spacing-md);
+    align-items: center;
+    justify-content: flex-start;
+}
+
+/* Espacements adaptables */
+.section {
+    padding: var(--spacing-xl) var(--spacing-md);
+}
+.container-fluid {
+    padding-left: var(--spacing-md);
+    padding-right: var(--spacing-md);
+}
+
+/* -------------------- MOBILE FIRST (0 à 767px) -------------------- */
+/* Rien de spécial ici car tout est déjà mobile par défaut.
+   On va juste renforcer certains comportements tactiles et marges */
+@media (max-width: 767px) {
+    body {
+        -webkit-tap-highlight-color: rgba(0,0,0,0.05);
+    }
+
+    /* Réduction des paddings sur mobile */
+    .card-body-premium,
+    .content-wrapper,
+    .main-content {
+        padding-left: var(--spacing-sm);
+        padding-right: var(--spacing-sm);
+    }
+
+    /* Empilement des éléments flex sur mobile */
+    .flex-responsive {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    /* Boutons pleine largeur sur mobile (optionnel, mais souvent préférable) */
+    .btn-premium,
+    button[type="submit"],
+    .btn {
+        width: 100%;
+        margin-bottom: var(--spacing-sm);
+    }
+
+    /* Ajustement des modals et dropdowns pour qu'ils ne dépassent pas */
+    .modal-dialog {
+        margin: var(--spacing-md);
+        max-width: calc(100% - 2 * var(--spacing-md));
+    }
+}
+
+/* -------------------- TABLETTES (768px à 1023px) -------------------- */
+@media (min-width: 768px) and (max-width: 1023px) {
+    .grid-responsive {
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: var(--spacing-lg);
+    }
+
+    .flex-responsive {
+        flex-direction: row;
+        flex-wrap: wrap;
+    }
+
+    .btn-premium,
+    button[type="submit"] {
+        width: auto;
+        min-width: 120px;
+    }
+
+    /* Légère augmentation des marges */
+    .container-fluid {
+        padding-left: var(--spacing-lg);
+        padding-right: var(--spacing-lg);
+    }
+}
+
+/* -------------------- DESKTOP (≥1024px) -------------------- */
+@media (min-width: 1024px) {
+    .grid-responsive {
+        grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+        gap: var(--spacing-xl);
+    }
+
+    body {
+        font-size: clamp(1rem, 1vw, 1.125rem);
+    }
+
+    /* Centrage du contenu pour les grands écrans */
+    .container {
+        max-width: 1200px;
+        margin-left: auto;
+        margin-right: auto;
+    }
+}
+
+/* -------------------- GRANDS ÉCRANS (≥1440px) -------------------- */
+@media (min-width: 1440px) {
+    .container {
+        max-width: 1400px;
+    }
+
+    body {
+        font-size: 1.125rem;
+    }
+
+    .grid-responsive {
+        grid-template-columns: repeat(4, 1fr);
+    }
+
+    /* Limitation de la largeur des colonnes pour ne pas avoir des lignes trop longues */
+    .col-lg-4, .col-md-6 {
+        max-width: 380px;
+    }
+}
+
+/* -------------------- UTILITAIRES RESPONSIVES -------------------- */
+/* Masquer/afficher selon écran */
+.hide-on-mobile {
+    display: none;
+}
+@media (min-width: 768px) {
+    .hide-on-mobile {
+        display: block;
+    }
+    .show-on-mobile-only {
+        display: none;
+    }
+}
+@media (max-width: 767px) {
+    .show-on-mobile-only {
+        display: block;
+    }
+    .hide-on-desktop {
+        display: none;
+    }
+}
+
+/* Texte centré sur mobile, aligné sur desktop */
+@media (max-width: 767px) {
+    .text-center-mobile {
+        text-align: center;
+    }
+}
+
+/* Ajustement des images pour éviter les débordements */
+img.fluid {
+    width: 100%;
+    height: auto;
+    object-fit: cover;
+}
+
+/* Empêcher le défilement horizontal forcé */
+html, body {
+    overflow-x: hidden;
+    position: relative;
+}
+
+/* Bordures et ombres cohérentes */
+.card, .card-premium, .modal-content {
+    border-radius: var(--border-radius-md);
+    overflow: hidden;
+}
+
+.btn-premium, button, input, select, textarea {
+    border-radius: var(--border-radius-sm);
+}
+
+/* Amélioration du défilement tactile sur iOS */
+* {
+    -webkit-overflow-scrolling: touch;
+}
+
+/* Scrollbar personnalisée (optionnel, plus premium) */
+::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 10px;
+}
+::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 10px;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+}

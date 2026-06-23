@@ -1,0 +1,184 @@
+concernant saisi note J’ai déjà :
+- la gestion des utilisateurs,
+- l’attribution des cours aux enseignants,
+- la titularisation des cotes,
+- la gestion des classes et des élèves.
+
+Je veux maintenant un module complet permettant à un enseignant d’enregistrer les cotes des élèves selon le modèle du bulletin scolaire congolais.
+
+Créer une architecture Django professionnelle avec :
+- models.py
+- views.py
+- forms.py
+- urls.py
+- template HTML Bootstrap
+- logique de calcul automatique
+- validation des données.
+
+### Structure attendue
+
+Un enseignant connecté ne doit voir que :
+- les cours qui lui sont attribués
+- les classes où il enseigne.
+
+L’enseignant doit sélectionner :
+1. Année scolaire
+2. Classe
+3. Cours
+4. Période (1ère période, 2ème période)
+5. Type de cote :
+   - Interrogation
+   - Travail journalier
+   - Examen
+   - Participation
+   - Composition
+
+Ensuite afficher automatiquement la liste des élèves de la classe dans un tableau.
+
+Chaque ligne du tableau doit contenir :
+
+- Nom de l’élève
+- Cote P1
+- Cote P2
+- Examen
+- Total période
+- Total trimestre/semestre
+- Observation
+
+### Logique de calcul
+
+Premier semestre :
+Total premier semestre =
+P1 + P2 + Examen
+
+Deuxième semestre :
+Total deuxième semestre =
+P3 + P4 + Examen
+
+Total général =
+Premier semestre + Deuxième semestre
+
+Calcul automatique des :
+- maximum
+- total obtenu
+- pourcentage
+- décision (Réussi / Échec)
+
+### Base de données
+
+Créer un modèle Django nommé `Cote` contenant :
+
+- id
+- eleve (ForeignKey)
+- cours (ForeignKey)
+- enseignant (ForeignKey)
+- annee_scolaire (ForeignKey)
+- classe (ForeignKey)
+
+- periode
+- type_evaluation
+
+- cote_p1
+- cote_p2
+- cote_p3
+- cote_p4
+
+- examen_semestre_1
+- examen_semestre_2
+
+- total_semestre_1
+- total_semestre_2
+- total_general
+- pourcentage
+- observation
+
+- created_at
+- updated_at
+
+### Contraintes
+
+- empêcher les doublons :
+un enseignant ne peut pas enregistrer deux fois les cotes du même élève pour le même cours et la même période.
+
+- validation :
+la cote ne doit jamais dépasser le maximum autorisé.
+
+### Interface souhaitée
+
+Créer une page Django propre avec Bootstrap :
+
+Tableau dynamique :
+
+| Élève | P1 | P2 | Examen | Total |
+
+Bouton :
+[ Enregistrer les cotes ]
+
+Utiliser :
+- Django ModelForm
+- CBV ou FBV propre
+- transactions atomiques
+- messages success/error
+- filtrage par enseignant connecté
+- Ajax si possible pour éviter le rechargement.
+
+Je veux un code professionnel, structuré et prêt à intégrer dans un projet Django existant.
+ adapter cette logique a ca {% extends "Cote/enseignant/includes/head.html" %}
+{% load static %}
+
+{% block title %}Saisir notes | CS KABA{% endblock %}
+
+{% block body %}
+
+{% include "Cote/enseignant/includes/sidebar.html" %}
+
+<main class="main-content">
+    {% include "Cote/enseignant/includes/topbar.html" %}
+    
+    <div class="page-container">
+        <div class="page-header">
+            <h1 class="page-title"><i class="fas fa-pen-alt"></i> Saisir notes</h1>
+        </div>
+        
+        <div class="card">
+            <div class="form-row">
+                <div class="form-group">
+                    <label>Classe</label>
+                    <select id="classeSelect">
+                        <option value="">-- Sélectionnez --</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Matière</label>
+                    <select id="coursSelect">
+                        <option value="">-- Sélectionnez --</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Période</label>
+                    <select id="periodeSelect">
+                        <option value="1">1ère période</option>
+                        <option value="2">2ème période</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <button class="btn-primary" onclick="chargerEleves()">Charger</button>
+                </div>
+            </div>
+            <hr>
+            <div id="notesTableContainer" style="overflow-x:auto;">
+                <p class="text-center text-gray-500 py-8">Sélectionnez une classe et une matière</p>
+            </div>
+        </div>
+    </div>
+
+    {% include "Cote/enseignant/includes/footer.html" %}
+</main>
+
+<script>
+function chargerEleves() {
+    // À implémenter avec AJAX
+    alert('Fonctionnalité à venir');
+}
+</script>
+{% endblock %}  adapter selon malogique

@@ -1,0 +1,159 @@
+{% load static %}
+{% url 'dashboard_de' as dashboard_url %}
+{% url 'ajouter_eleve_page' as ajouter_eleve_url %}
+{% url 'liste_eleves' as liste_eleves_url %}
+{% url 'ajouter_enseignant_page' as ajouter_enseignant_url %}
+{% url 'gestion_cls_option_page' as gestion_classe_url %}
+{% url 'cours_de' as cours_url %}
+{% url 'annee_scolaire_page' as annee_scolaire_url %}
+{% url 'reinscription' as reinscription_url %}
+{% url 'logout' as logout_url %}
+
+<aside class="sidebar">
+    <div class="sidebar-header">
+        <a href="{{ dashboard_url }}" class="logo">
+            <div class="logo-img">
+                <i class="fas fa-graduation-cap"></i>
+            </div>
+            <div class="logo-text">
+                <h2>CS KABA</h2>
+                <p>Complexe Scolaire d'Excellence</p>
+            </div>
+        </a>
+        <button class="sidebar-toggle" aria-label="Réduire/agrandir sidebar">
+            <i class="fas fa-chevron-left"></i>
+        </button>
+    </div>
+
+    <nav class="sidebar-nav">
+        <ul>
+            <li class="nav-item {% if request.resolver_match.url_name == 'dashboard_de' %}active{% endif %}">
+                <a href="{{ dashboard_url }}" class="nav-link">
+                    <i class="fas fa-tachometer-alt"></i>
+                    <span>Tableau de bord</span>
+                </a>
+            </li>
+
+            <li class="nav-section"><span class="nav-section-title">Gestion</span></li>
+
+            <li class="nav-item {% if request.resolver_match.url_name == 'ajouter_eleve_page' %}active{% endif %}">
+                <a href="{{ ajouter_eleve_url }}" class="nav-link">
+                    <i class="fas fa-user-graduate"></i>
+                    <span>Ajouter un élève</span>
+                </a>
+            </li>
+
+            <li class="nav-item {% if request.resolver_match.url_name == 'liste_eleves' %}active{% endif %}">
+                <a href="{{ liste_eleves_url }}" class="nav-link">
+                    <i class="fas fa-users"></i>
+                    <span>Liste des élèves</span>
+                </a>
+            </li>
+
+            <li class="nav-item {% if request.resolver_match.url_name == 'reinscription' %}active{% endif %}">
+                <a href="{{ reinscription_url }}" class="nav-link">
+                    <i class="fas fa-redo-alt"></i>
+                    <span>Réinscription</span>
+                </a>
+            </li>
+
+            <li class="nav-item {% if request.resolver_match.url_name == 'ajouter_enseignant_page' %}active{% endif %}">
+                <a href="{{ ajouter_enseignant_url }}" class="nav-link">
+                    <i class="fas fa-chalkboard-user"></i>
+                    <span>Ajouter un enseignant</span>
+                </a>
+            </li>
+
+            <li class="nav-item {% if request.resolver_match.url_name == 'gestion_cls_option_page' %}active{% endif %}">
+                <a href="{{ gestion_classe_url }}" class="nav-link">
+                    <i class="fas fa-school"></i>
+                    <span>Classes et options</span>
+                </a>
+            </li>
+
+            <li class="nav-item {% if request.resolver_match.url_name == 'cours_de' %}active{% endif %}">
+                <a href="{{ cours_url }}" class="nav-link">
+                    <i class="fas fa-chalkboard-teacher"></i>
+                    <span>Gestion des cours</span>
+                </a>
+            </li>
+
+            <li class="nav-item {% if request.resolver_match.url_name == 'annee_scolaire_page' %}active{% endif %}">
+                <a href="{{ annee_scolaire_url }}" class="nav-link">
+                    <i class="fas fa-calendar-alt"></i>
+                    <span>Année scolaire</span>
+                </a>
+            </li>
+
+            <li class="nav-section"><span class="nav-section-title">Rapports</span></li>
+
+            <li class="nav-item">
+                <a href="#" class="nav-link" id="generatePalmaresBtn">
+                    <i class="fas fa-trophy"></i>
+                    <span>Générer palmarès</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="#" class="nav-link" id="exportPdfBtn">
+                    <i class="fas fa-file-pdf"></i>
+                    <span>Archives PDF</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="#" class="nav-link" id="exportExcelBtn">
+                    <i class="fas fa-file-excel"></i>
+                    <span>Exporter Excel</span>
+                </a>
+            </li>
+        </ul>
+    </nav>
+
+    <div class="sidebar-footer">
+        <div class="user-info">
+            <div class="user-avatar">
+                <i class="fas fa-user-tie"></i>
+            </div>
+            <div class="user-details">
+                <h4>{{ user_nom|default:"Administrateur" }}</h4>
+                <p>Directeur des Études</p>
+            </div>
+        </div>
+        <a href="{{ logout_url }}" class="logout-btn">
+            <i class="fas fa-sign-out-alt"></i>
+            <span>Déconnexion</span>
+        </a>
+    </div>
+</aside>
+
+<script>
+// Gestion des actions spécifiques (palmarès, exports)
+document.addEventListener('DOMContentLoaded', function() {
+    const palmaresBtn = document.getElementById('generatePalmaresBtn');
+    if (palmaresBtn) {
+        palmaresBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            if (typeof genererPalmares === 'function') {
+                genererPalmares();
+            } else {
+                Swal.fire('Fonctionnalité', 'Génération du palmarès', 'info');
+            }
+        });
+    }
+    const pdfBtn = document.getElementById('exportPdfBtn');
+    if (pdfBtn) {
+        pdfBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            if (typeof exportPDF === 'function') exportPDF();
+            else Swal.fire('Export PDF', 'Fonctionnalité en développement', 'info');
+        });
+    }
+    const excelBtn = document.getElementById('exportExcelBtn');
+    if (excelBtn) {
+        excelBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            if (typeof exportExcel === 'function') exportExcel();
+            else Swal.fire('Export Excel', 'Fonctionnalité en développement', 'info');
+        });
+    }
+});
+</script>

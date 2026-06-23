@@ -1,0 +1,71 @@
+{% extends "Cote/enseignant/includes/head.html" %}
+{% load static %}
+
+{% block title %}Liste des cotes par cours | CS KABA{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{% static 'css/enseignant/liste_cours.css' %}">
+{% endblock %}
+
+{% block body %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1><i class="fas fa-list-alt"></i> Liste des cotes par cours</h1>
+        <button id="printBtn" class="btn-print"><i class="fas fa-print"></i> Imprimer la liste</button>
+    </div>
+
+    <!-- Filtres -->
+    <div class="card mb-4">
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <label class="form-label">Année scolaire</label>
+                    <select id="anneeSelect" class="form-select">
+                        <option value="">Chargement...</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Classe</label>
+                    <select id="classeSelect" class="form-select" disabled>
+                        <option value="">Sélectionnez d'abord une année</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Cours</label>
+                    <select id="coursSelect" class="form-select" disabled>
+                        <option value="">Sélectionnez d'abord une classe</option>
+                    </select>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">Colonne à afficher</label>
+                    <select id="colonneSelect" class="form-select">
+                        <option value="p1">P1 (notes période 1)</option>
+                        <option value="p2">P2 (notes période 2)</option>
+                        <option value="ex1">Examen S1</option>
+                        <option value="total_s1">Total S1</option>
+                        <option value="p3">P3 (notes période 3)</option>
+                        <option value="p4">P4 (notes période 4)</option>
+                        <option value="ex2">Examen S2</option>
+                        <option value="total_s2">Total S2</option>
+                        <option value="total_general">Total général</option>
+                        <option value="pourcentage">Pourcentage (%)</option>
+                    </select>
+                </div>
+            </div>
+            <div class="row mt-3">
+                <div class="col-12">
+                    <button id="chargerBtn" class="btn btn-primary" disabled><i class="fas fa-search"></i> Afficher la liste</button>
+                    <button id="resetBtn" class="btn btn-secondary"><i class="fas fa-undo-alt"></i> Réinitialiser</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Zone d'affichage des résultats (tableau + en-tête) -->
+    <div id="resultContainer">
+        <div class="alert alert-info">Veuillez sélectionner une année, une classe et un cours, puis cliquez sur "Afficher la liste".</div>
+    </div>
+</div>
+
+<script src="{% static 'js/enseignant/liste_cours.js' %}"></script>
+{% endblock %}

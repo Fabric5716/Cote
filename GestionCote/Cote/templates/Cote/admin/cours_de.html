@@ -1,0 +1,241 @@
+<!-- Cote/templates/Cote/admin/cours_de.html -->
+{% extends "Cote/admin/includes/head.html" %}
+{% load static %}
+
+{% block title %}Gestion des cours | CS KABA{% endblock %}
+
+{% block extra_head %}
+<link rel="stylesheet" href="{% static 'css/admin/cours_de.css' %}">
+{% endblock %}
+
+{% block body %}
+<div class="page-container">
+    <div class="page-header">
+        <h1 class="page-title"><i class="fas fa-book-open"></i> Gestion des cours</h1>
+        <a href="{% url 'dashboard_de' %}" class="btn-secondary"><i class="fas fa-arrow-left"></i> Retour</a>
+    </div>
+
+    <div class="tabs-container">
+        <div class="tabs-header">
+            <button class="tab-btn active" data-tab="cours"><i class="fas fa-book"></i> Gestion des cours</button>
+            <button class="tab-btn" data-tab="attribution"><i class="fas fa-chalkboard-teacher"></i> Attribution aux enseignants</button>
+            <button class="tab-btn" data-tab="titulaire"><i class="fas fa-crown"></i> Titulaires de classe</button>
+        </div>
+
+        <!-- Tab Cours -->
+        <div class="tab-content active" id="tab-cours">
+            <div class="card">
+                <div class="card-header">
+                    <h3>Liste des cours</h3>
+                    <button class="btn-add" onclick="openModal('modalCours')"><i class="fas fa-plus"></i> Nouveau cours</button>
+                </div>
+                <div class="table-responsive">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Code</th>
+                                <th>Nom du cours</th>
+                                <th>Points/période</th>
+                                <th>Option</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for cours in cours_list %}
+                            <tr>
+                                <td>{{ cours.code_cours }}</td>
+                                <td>{{ cours.nom_cours }}</td>
+                                <td>{{ cours.points_par_periode|default:40 }}</td>
+                                <td>{% if cours.id_option %}{{ cours.id_option.nom_option }}{% else %}Commun{% endif %}</td>
+                                <td class="actions-cell">
+                                    <button class="action-btn edit" onclick="editCours({{ cours.id }})"><i class="fas fa-edit"></i></button>
+                                    <button class="action-btn delete" onclick="deleteCours({{ cours.id }})"><i class="fas fa-trash"></i></button>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr><td colspan="5" class="empty-message">Aucun cours enregistré</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab Attribution -->
+        <div class="tab-content" id="tab-attribution">
+            <div class="card">
+                <div class="card-header">
+                    <h3>Attribuer un cours</h3>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Cycle</label>
+                        <select id="attrib_cycle">
+                            <option value="">Sélectionnez</option>
+                            <option value="CO">Cycle d'Orientation (7e-8e)</option>
+                            <option value="SECONDAIRE">Secondaire</option>
+                        </select>
+                    </div>
+                    <div class="form-group" id="attrib_option_group" style="display:none;">
+                        <label>Option (obligatoire pour Secondaire)</label>
+                        <select id="attrib_option">
+                            <option value="">-- Option --</option>
+                            {% for opt in options %}
+                            <option value="{{ opt.id }}">{{ opt.nom_option }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Classe</label>
+                        <select id="attrib_classe">
+                            <option value="">-- Sélectionnez d'abord un cycle --</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Cours</label>
+                        <select id="attrib_cours">
+                            <option value="">-- Sélectionnez d'abord cycle/option --</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Enseignant</label>
+                        <select id="attrib_enseignant">
+                            <option value="">-- Enseignant --</option>
+                            {% for ens in enseignants %}
+                            <option value="{{ ens.id }}">{{ ens.id_utilisateur.id_personne.nom }} {{ ens.id_utilisateur.id_personne.prenom }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>&nbsp;</label>
+                        <button class="btn-primary" onclick="attribuerCours()"><i class="fas fa-check-circle"></i> Attribuer</button>
+                    </div>
+                </div>
+                <hr>
+                <h3>Cours déjà attribués</h3>
+                <div class="table-responsive">
+                    <table class="data-table" id="attributionsTable">
+                        <thead>
+                            <tr><th>Cours</th><th>Enseignant</th><th>Classe</th><th>Actions</th></tr>
+                        </thead>
+                        <tbody></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab Titulaire -->
+        <div class="tab-content" id="tab-titulaire">
+            <div class="card">
+                <div class="card-header">
+                    <h3>Désigner un titulaire</h3>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Classe</label>
+                        <select id="titulaire_classe">
+                            <option value="">-- Classe --</option>
+                            {% for classe in classes %}
+                            <option value="{{ classe.id }}">{{ classe.nom_classe }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Enseignant</label>
+                        <select id="titulaire_enseignant">
+                            <option value="">-- Sélectionnez --</option>
+                            {% for ens in enseignants %}
+                            <option value="{{ ens.id }}">{{ ens.id_utilisateur.id_personne.nom }} {{ ens.id_utilisateur.id_personne.prenom }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>&nbsp;</label>
+                        <button class="btn-primary" onclick="definirTitulaire()"><i class="fas fa-save"></i> Enregistrer</button>
+                        <button class="btn-danger" onclick="supprimerTitulaire()"><i class="fas fa-trash-alt"></i> Supprimer</button>
+                    </div>
+                </div>
+                <div id="titulaire_info" class="info-banner"></div>
+                <hr>
+                <h3>Liste des titulaires actuels</h3>
+                <div class="table-responsive">
+                    <table class="data-table" id="titulairesTable">
+                        <thead>
+                            <tr><th>Enseignant</th><th>Classe</th><th>Année scolaire</th><th>Actions</th></tr>
+                        </thead>
+                        <tbody>
+                            {% for titulaire in titulaires %}
+                            <tr data-id="{{ titulaire.id }}">
+                                <td>{{ titulaire.id_personnel.id_utilisateur.id_personne.nom }} {{ titulaire.id_personnel.id_utilisateur.id_personne.prenom }}</td>
+                                <td>{{ titulaire.id_classe.nom_classe }}</td>
+                                <td>{{ titulaire.id_annee.annee_scolaire }}</td>
+                                <td><button class="action-btn delete" onclick="supprimerTitulaireById({{ titulaire.id }})"><i class="fas fa-trash"></i></button></td>
+                            </tr>
+                            {% empty %}
+                            <tr class="empty-message"><td colspan="4">Aucun titulaire désigné</td></tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- MODAL AJOUT/MODIFICATION COURS -->
+<div id="modalCours" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 id="modalCoursTitle">Ajouter un cours</h3>
+            <span class="close" onclick="closeModal('modalCours')">&times;</span>
+        </div>
+        <form id="coursForm">
+            {% csrf_token %}
+            <input type="hidden" name="cours_id" id="cours_id">
+            <div class="form-group">
+                <label>Code cours *</label>
+                <input type="text" name="code_cours" id="code_cours" required>
+            </div>
+            <div class="form-group">
+                <label>Nom du cours *</label>
+                <input type="text" name="nom_cours" id="nom_cours" required>
+            </div>
+            <div class="form-group">
+                <label>Points par période *</label>
+                <input type="number" name="points_par_periode" id="points_par_periode" value="40" min="1" max="100" step="1" required>
+                <small>Exemple : 40 points pour chaque période (P1, P2, P3, P4). L'examen vaut 2x ce montant.</small>
+            </div>
+            <div class="form-group">
+                <label>Description</label>
+                <textarea name="description" id="description" rows="2"></textarea>
+            </div>
+            <div class="form-group">
+                <label>Cycle d'enseignement</label>
+                <select name="cycle" id="cours_cycle">
+                    <option value="">Tous cycles</option>
+                    <option value="CO">Cycle d'Orientation</option>
+                    <option value="SECONDAIRE">Secondaire</option>
+                </select>
+            </div>
+            <div class="form-group" id="cours_option_group" style="display:none;">
+                <label>Option (pour secondaire)</label>
+                <select name="option_id" id="cours_option">
+                    <option value="">-- Option --</option>
+                    {% for opt in options %}
+                    <option value="{{ opt.id }}">{{ opt.nom_option }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn-cancel" onclick="closeModal('modalCours')">Annuler</button>
+                <button type="submit" class="btn-save">Enregistrer</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<input type="hidden" id="annee_active_id" value="{{ annee_active.id|default:'' }}">
+<input type="hidden" id="classes_data" value='{{ classes_json|safe }}'>
+
+<script src="{% static 'js/admin/cours_de.js' %}"></script>
+{% endblock %}

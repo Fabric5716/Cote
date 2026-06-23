@@ -1,0 +1,123 @@
+<!-- templates/Cote/login.html -->
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Connexion | CS KABA</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="/static/css/login.css">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#1e3c72',
+                        secondary: '#2a5298',
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-gradient-to-br from-primary to-secondary min-h-screen">
+    
+    <div class="container mx-auto px-4 py-8">
+        <!-- Bouton Retour -->
+        <div class="max-w-md mx-auto mb-4">
+            <a href="/" class="inline-flex items-center text-white hover:text-yellow-300 transition group">
+                <i class="fas fa-arrow-left mr-2 group-hover:-translate-x-1 transition"></i>
+                Retour à l'accueil
+            </a>
+        </div>
+
+        <!-- Logo -->
+        <div class="text-center mb-8">
+            <div class="inline-block">
+               
+        
+            </div>
+        </div>
+        
+        <!-- Messages -->
+        {% if messages %}
+            {% for message in messages %}
+                <div class="max-w-md mx-auto mb-4 p-4 rounded-lg 
+                    {% if message.tags == 'success' %}bg-green-500
+                    {% elif message.tags == 'error' %}bg-red-500
+                    {% else %}bg-blue-500{% endif %} text-white">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+        
+        <!-- Formulaire de connexion -->
+        <div class="max-w-md mx-auto">
+            <div class="bg-white rounded-2xl shadow-2xl overflow-hidden">
+                <div class="bg-gradient-to-r from-primary to-secondary p-6 text-center">
+                    <!-- Logo de l'institution (remplacement du cadenas) -->
+                     <h2 class="text-2xl font-bold text-white mt-2">CS KABA</h2>
+                    <img src="/static/images/kaba.png" alt="CS KABA" class="h-16 w-auto mx-auto mb-2" onerror="this.style.display='none'">
+                    <p class="text-white opacity-80 text-sm">Accédez à votre espace</p>
+                </div>
+                
+                <form method="POST" class="p-8" id="loginForm">
+                    {% csrf_token %}
+                    
+                    <div class="mb-6">
+                        <label class="block text-gray-700 font-semibold mb-2">
+                            <i class="fas fa-envelope mr-2 text-primary"></i>Email
+                        </label>
+                        <input type="email" name="email" id="email" required
+                               class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-primary transition"
+                               placeholder="votre@email.com">
+                    </div>
+                    
+                    <div class="mb-6">
+                        <label class="block text-gray-700 font-semibold mb-2">
+                            <i class="fas fa-key mr-2 text-primary"></i>Mot de passe
+                        </label>
+                        <div class="relative">
+                            <input type="password" name="password" id="password" required
+                                   class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:border-primary transition"
+                                   placeholder="••••••••">
+                            <button type="button" id="togglePassword" class="absolute right-3 top-3 text-gray-500 hover:text-primary transition">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <button type="submit" class="w-full bg-gradient-to-r from-primary to-secondary text-white py-3 rounded-lg font-semibold hover:shadow-lg transition transform hover:-translate-y-0.5">
+                        <i class="fas fa-sign-in-alt mr-2"></i>Se connecter
+                    </button>
+                </form>
+            </div>
+            
+            <!-- Lien pour créer l'admin principal -->
+            {% if not admin_exists %}
+                <div class="text-center mt-6">
+                    <a href="{% url 'register_admin' %}" class="inline-flex items-center text-white hover:text-yellow-300 transition">
+                        <i class="fas fa-user-shield mr-2"></i>
+                        Créer le compte Directeur des Études
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+        
+        <!-- Footer -->
+        <div class="text-center mt-8 text-white opacity-70 text-sm">
+            <p>&copy; 2025 CS KABA - Complexe Scolaire d'Excellence</p>
+        </div>
+    </div>
+    
+    <script src="/static/js/login.js"></script>
+</body>
+</html>

@@ -1,0 +1,82 @@
+{% load static %}
+{% url 'dashboard_enseignant' as dashboard_url %}
+{% url 'mes_cours' as mes_cours_url %}
+{% url 'saisir_cotes' as saisir_cotes_url %}
+{% url 'verifier_cotes_titulaire' as verifier_cotes_url %}
+{% url 'liste_cours_enseignant' as liste_cours_url %}
+{% url 'mon_profil' as mon_profil_url %}
+{% url 'logout' as logout_url %}
+
+<aside class="sidebar">
+    <div class="sidebar-header">
+        <a href="{{ dashboard_url }}" class="logo">
+            <div class="logo-img">
+                <i class="fas fa-chalkboard-user"></i>
+            </div>
+            <div class="logo-text">
+                <h2>CS KABA</h2>
+                <p>Espace Enseignant</p>
+            </div>
+        </a>
+        <button class="sidebar-toggle" aria-label="Réduire/agrandir sidebar">
+            <i class="fas fa-chevron-left"></i>
+        </button>
+    </div>
+
+    <nav class="sidebar-nav">
+        <ul>
+            <li class="nav-item {% if request.resolver_match.url_name == 'dashboard_enseignant' %}active{% endif %}">
+                <a href="{{ dashboard_url }}" class="nav-link">
+                    <i class="fas fa-tachometer-alt"></i>
+                    <span>Tableau de bord</span>
+                </a>
+            </li>
+
+            <li class="nav-section"><span class="nav-section-title">Gestion pédagogique</span></li>
+
+            <li class="nav-item {% if request.resolver_match.url_name == 'mes_cours' %}active{% endif %}">
+                <a href="{{ mes_cours_url }}" class="nav-link">
+                    <i class="fas fa-book-open"></i>
+                    <span>Mes cours</span>
+                </a>
+            </li>
+
+            <li class="nav-item {% if request.resolver_match.url_name == 'saisir_cotes' %}active{% endif %}">
+                <a href="{{ saisir_cotes_url }}" class="nav-link">
+                    <i class="fas fa-pen-alt"></i>
+                    <span>Saisir cotes</span>
+                </a>
+            </li>
+
+            <li class="nav-item {% if request.resolver_match.url_name == 'verifier_cotes_titulaire' %}active{% endif %}">
+                <a href="{{ verifier_cotes_url }}" class="nav-link">
+                    <i class="fas fa-check-double"></i>
+                    <span>Vérifier les cotes</span>
+                </a>
+            </li>
+
+            <li class="nav-item {% if request.resolver_match.url_name == 'liste_cours_enseignant' %}active{% endif %}">
+                <a href="{{ liste_cours_url }}" class="nav-link">
+                    <i class="fas fa-print"></i>
+                    <span>Liste des cotes (imprimable)</span>
+                </a>
+            </li>
+        </ul>
+    </nav>
+
+    <div class="sidebar-footer">
+        <div class="user-info">
+            <div class="user-avatar">
+                <i class="fas fa-user-tie"></i>
+            </div>
+            <div class="user-details">
+                <h4>{{ user_nom|default:"Enseignant" }}</h4>
+                <p>{{ user_role|default:"Enseignant" }}</p>
+            </div>
+        </div>
+        <a href="{{ logout_url }}" class="logout-btn">
+            <i class="fas fa-sign-out-alt"></i>
+            <span>Déconnexion</span>
+        </a>
+    </div>
+</aside>

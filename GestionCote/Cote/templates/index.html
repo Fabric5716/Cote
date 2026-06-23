@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CS KABA | Complexe Scolaire d'Excellence</title>
+    
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+    
+    <!-- AOS Animation Library -->
+    <link href="https://unpkg.com/aos@2.3.1/dist/aos.css" rel="stylesheet">
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="/static/css/style.css">
+    
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        primary: '#1e3c72',
+                        secondary: '#2a5298',
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-gray-50">
+
+    <!-- Loader -->
+    <div class="loader" id="loader">
+        <div class="spinner"></div>
+    </div>
+
+    <!-- Navigation Bar -->
+    <nav class="bg-white shadow-lg fixed w-full z-50 top-0 transition-all duration-300" id="navbar">
+        <div class="container mx-auto px-6 py-4">
+            <div class="flex items-center justify-between">
+                <!-- Logo and Brand -->
+                <div class="flex items-center space-x-3">
+                    <img src="/static/images/kaba.png" alt="Logo CS KABA" class="h-14 w-auto floating" onerror="this.style.display='none'">
+                    <div>
+                        <h1 class="text-xl font-bold text-gray-800">CS KABA</h1>
+                        <p class="text-xs text-gray-500">Complexe Scolaire d'Excellence</p>
+                    </div>
+                </div>
+                
+                <!-- Desktop Menu -->
+                <div class="hidden md:flex space-x-8">
+                    <a href="#accueil" class="nav-link text-gray-700 hover:text-primary font-medium transition">Accueil</a>
+                    <a href="#apropos" class="nav-link text-gray-700 hover:text-primary font-medium transition">À propos</a>
+                    <a href="#services" class="nav-link text-gray-700 hover:text-primary font-medium transition">Services</a>
+                    <a href="#statistiques" class="nav-link text-gray-700 hover:text-primary font-medium transition">Chiffres</a>
+                    <a href="#temoignages" class="nav-link text-gray-700 hover:text-primary font-medium transition">Témoignages</a>
+                    <a href="#contact" class="nav-link text-gray-700 hover:text-primary font-medium transition">Contact</a>
+                </div>
+                
+                <!-- Connexion Button - Changé de /admin vers /login/ -->
+                <div class="hidden md:block">
+                    <a href="/login/" class="bg-gradient-to-r from-primary to-secondary text-white px-6 py-2 rounded-full font-semibold hover:shadow-lg transition">
+                        <i class="fas fa-sign-in-alt mr-2"></i>Connexion
+                    </a>
+                </div>
+                
+                <!-- Mobile Menu Button -->
+                <div class="md:hidden">
+                    <button id="mobile-menu-button" class="text-gray-700 focus:outline-none">
+                        <i class="fas fa-bars text-2xl"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Mobile Menu -->
+            <div id="mobile-menu" class="hidden md:hidden mt-4 pb-4">
+                <div class="flex flex-col space-y-3">
+                    <a href="#accueil" class="text-gray-700 hover:text-primary font-medium transition py-2">Accueil</a>
+                    <a href="#apropos" class="text-gray-700 hover:text-primary font-medium transition py-2">À propos</a>
+                    <a href="#services" class="text-gray-700 hover:text-primary font-medium transition py-2">Services</a>
+                    <a href="#statistiques" class="text-gray-700 hover:text-primary font-medium transition py-2">Chiffres</a>
+                    <a href="#temoignages" class="text-gray-700 hover:text-primary font-medium transition py-2">Témoignages</a>
+                    <a href="#contact" class="text-gray-700 hover:text-primary font-medium transition py-2">Contact</a>
+                    <!-- Mobile Connexion Button - Changé de /admin vers /login/ -->
+                    <a href="/login/" class="bg-gradient-to-r from-primary to-secondary text-white px-6 py-2 rounded-full font-semibold text-center">
+                        <i class="fas fa-sign-in-alt mr-2"></i>Connexion
+                    </a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section id="accueil" class="min-h-screen flex items-center relative overflow-hidden pt-20" style="background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);">
+        <div class="container mx-auto px-6 relative z-10 py-20">
+            <div class="grid md:grid-cols-2 gap-12 items-center">
+                <div class="fade-in-left">
+                    <h1 class="text-5xl md:text-6xl font-bold mb-6 text-white">
+                        Bienvenue au <span class="text-yellow-300">CS KABA</span>
+                    </h1>
+                    <p class="text-xl mb-8 text-white opacity-90">
+                        Le Complexe Scolaire d'Excellence forme les leaders de demain. 
+                        Excellence, Innovation et Réussite sont nos maîtres mots.
+                    </p>
+                    <div class="flex space-x-4">
+                        <a href="#contact" class="bg-white text-primary px-8 py-3 rounded-full font-semibold hover:shadow-lg transition">
+                            <i class="fas fa-arrow-right mr-2"></i>Nous contacter
+                        </a>
+                        <a href="#services" class="border-2 border-white text-white px-8 py-3 rounded-full font-semibold hover:bg-white hover:text-primary transition">
+                            <i class="fas fa-graduation-cap mr-2"></i>Nos services
+                        </a>
+                    </div>
+                </div>
+                <div class="fade-in-right floating">
+                    <img src="https://images.unsplash.com/photo-1523050854058-8df90110c9f1?ixlib=rb-4.0.3" alt="Illustration" class="rounded-2xl shadow-2xl w-full max-w-md mx-auto">
+                </div>
+            </div>
+        </div>
+        <div class="absolute bottom-0 left-0 w-full">
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 320">
+                <path fill="#ffffff" fill-opacity="1" d="M0,96L48,112C96,128,192,160,288,160C384,160,480,128,576,122.7C672,117,768,139,864,154.7C960,171,1056,181,1152,165.3C1248,149,1344,107,1392,85.3L1440,64L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path>
+            </svg>
+        </div>
+    </section>
+
+    <!-- About Section -->
+    <section id="apropos" class="py-20 bg-white">
+        <div class="container mx-auto px-6">
+            <div class="text-center mb-12" data-aos="fade-up">
+                <h2 class="text-3xl md:text-4xl font-bold text-gray-800 mb-4">À propos de <span class="text-primary">CS KABA</span></h2>
+                <div class="w-24 h-1 bg-primary mx-auto"></div>
+                <p class="text-gray-600 mt-4 max-w-2xl mx-auto">Découvrez notre histoire, notre mission et nos valeurs</p>
+            </div>
+            
+            <div class="grid md:grid-cols-2 gap-12 items-center">
+                <div data-aos="fade-right">
+                    <img src="https://images.unsplash.com/photo-1523050854058-8df90110c9f1?ixlib=rb-4.0.3" alt="Élèves" class="rounded-2xl shadow-2xl w-full">
+                </div>
+                <div data-aos="fade-left">
+                    <h3 class="text-3xl font-bold mb-4 text-gray-800">Une école d'excellence depuis 1995</h3>
+                    <p class="text-gray-600 mb-6 leading-relaxed">
+                        Le Complexe Scolaire KABA est une institution éducative de renom, reconnue pour son excellence 
+                        académique et son innovation pédagogique. Nous formons chaque année des centaines d'élèves 
+                        qui deviennent des leaders dans leurs domaines respectifs.
+                    </p>
+                    <div class="space-y-4">
+                        <div class="flex items-start space-x-3">
+                            <i class="fas fa-check-circle text-primary text-xl mt-1"></i>
+                            <div>
+                                <h4 class="font-semibold text-lg text-gray-800">Mission</h4>
+                                <p class="text-gray-600">Former des citoyens compétents, responsables et engagés.</p>
+                            </div>
+                        </div>
+                        <div class="flex items-start space-x-3">
+                            <i class="fas fa-check-circle text-primary text-xl mt-1"></i>
+                            <div>
+                                <h4 class="font-semibold text-lg text-gray-800">Vision</h4>
+                                <p class="text-gray-600">Devenir le leader de l'éducation en Afrique centrale.</p>
+                            </div>
+                        </div>
+                        <div class="flex items-start space-x-3">
+                            <i class="fas fa-check-circle text-primary text-xl mt-1"></i>
+                            <div>
+                                <h4 class="font-semibold text-lg text-gray-800">Valeurs</h4>
+                                <p class="text-gray-600">Excellence, Intégrité, Respect, Innovation.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Services Section -->
+    <section id="services" class="py-20 bg-gray-50">
+        <div class="container mx-auto px-6">
+            <div class="text-center mb-12" data-aos="fade-up">
+                <h2 class="text-3xl md:text-4xl font-bold text-gray-800 mb-4">Nos <span class="text-primary">Services</span></h2>
+                <div class="w-24 h-1 bg-primary mx-auto"></div>
+                <p class="text-gray-600 mt-4 max-w-2xl mx-auto">Des services éducatifs complets pour la réussite de vos enfants</p>
+            </div>
+            
+            <div class="grid md:grid-cols-3 gap-8">
+                <div class="bg-white rounded-xl p-6 text-center shadow-lg hover:shadow-xl transition-all hover:-translate-y-2" data-aos="fade-up" data-aos-delay="0">
+                    <div class="w-20 h-20 bg-gradient-to-r from-primary to-secondary rounded-full flex items-center justify-center mx-auto mb-4">
+                        <i class="fas fa-chalkboard-user text-white text-3xl"></i>
+                    </div>
+                    <h3 class="text-xl font-bold mb-3 text-gray-800">Enseignement de Qualité</h3>
+                    <p class="text-gray-600">Des programmes éducatifs innovants et des enseignants hautement qualifiés.</p>
+                </div>
+                
+                <div class="bg-white rounded-xl p-6 text-center shadow-lg hover:shadow-xl transition-all hover:-translate-y-2" data-aos="fade-up" data-aos-delay="100">
+                    <div class="w-20 h-20 bg-gradient-to-r from-primary to-secondary rounded-full flex items-center justify-center mx-auto mb-4">
+                        <i class="fas fa-laptop-code text-white text-3xl"></i>
+                    </div>
+                    <h3 class="text-xl font-bold mb-3 text-gray-800">Laboratoires Modernes</h3>
+                    <p class="text-gray-600">Des équipements de pointe pour l'apprentissage pratique et numérique.</p>
+                </div>
+                
+                <div class="bg-white rounded-xl p-6 text-center shadow-lg hover:shadow-xl transition-all hover:-translate-y-2" data-aos="fade-up" data-aos-delay="200">
+                    <div class="w-20 h-20 bg-gradient-to-r from-primary to-secondary rounded-full flex items-center justify-center mx-auto mb-4">
+                        <i class="fas fa-futbol text-white text-3xl"></i>
+                    </div>
+                    <h3 class="text-xl font-bold mb-3 text-gray-800">Activités Sportives</h3>
+                    <p class="text-gray-600">Des installations sportives pour un développement physique harmonieux.</p>
+                </div>
+                
+                <div class="bg-white rounded-xl p-6 text-center shadow-lg hover:shadow-xl transition-all hover:-translate-y-2" data-aos="fade-up" data-aos-delay="300">
+                    <div class="w-20 h-20 bg-gradient-to-r from-primary to-secondary rounded-full flex items-center justify-center mx-auto mb-4">
+                        <i class="fas fa-globe text-white text-3xl"></i>
+                    </div>
+                    <h3 class="text-xl font-bold mb-3 text-gray-800">Échanges Culturels</h3>
+                    <p class="text-gray-600">Des programmes d'échange avec des écoles partenaires.</p>
+                </div>
+                
+                <div class="bg-white rounded-xl p-6 text-center shadow-lg hover:shadow-xl transition-all hover:-translate-y-2" data-aos="fade-up" data-aos-delay="400">
+                    <div class="w-20 h-20 bg-gradient-to-r from-primary to-secondary rounded-full flex items-center justify-center mx-auto mb-4">
+                        <i class="fas fa-chart-line text-white text-3xl"></i>
+                    </div>
+                    <h3 class="text-xl font-bold mb-3 text-gray-800">Suivi Personnalisé</h3>
+                    <p class="text-gray-600">Un accompagnement individualisé pour chaque élève.</p>
+                </div>
+                
+                <div class="bg-white rounded-xl p-6 text-center shadow-lg hover:shadow-xl transition-all hover:-translate-y-2" data-aos="fade-up" data-aos-delay="500">
+                    <div class="w-20 h-20 bg-gradient-to-r from-primary to-secondary rounded-full flex items-center justify-center mx-auto mb-4">
+                        <i class="fas fa-calendar-alt text-white text-3xl"></i>
+                    </div>
+                    <h3 class="text-xl font-bold mb-3 text-gray-800">Gestion des Notes</h3>
+                    <p class="text-gray-600">Système informatisé de gestion des cotes et bulletins.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Statistics Section -->
+    <section id="statistiques" class="py-20" style="background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);">
+        <div class="container mx-auto px-6">
+            <div class="text-center mb-12" data-aos="fade-up">
+                <h2 class="text-4xl font-bold mb-4 text-white">CS KABA en <span class="text-yellow-300">Chiffres</span></h2>
+                <p class="text-xl text-white opacity-90">Notre impact en quelques statistiques</p>
+            </div>
+            
+            <div class="grid md:grid-cols-4 gap-8">
+                <div class="text-center" data-aos="zoom-in" data-aos-delay="0">
+                    <div class="text-white text-5xl font-bold">
+                        <span class="counter" data-target="2500">0</span>+
+                    </div>
+                    <div class="text-white opacity-90 mt-2">Élèves Formés</div>
+                </div>
+                
+                <div class="text-center" data-aos="zoom-in" data-aos-delay="100">
+                    <div class="text-white text-5xl font-bold">
+                        <span class="counter" data-target="150">0</span>+
+                    </div>
+                    <div class="text-white opacity-90 mt-2">Enseignants Qualifiés</div>
+                </div>
+                
+                <div class="text-center" data-aos="zoom-in" data-aos-delay="200">
+                    <div class="text-white text-5xl font-bold">
+                        <span class="counter" data-target="98">0</span>%
+                    </div>
+                    <div class="text-white opacity-90 mt-2">Taux de Réussite</div>
+                </div>
+                
+                <div class="text-center" data-aos="zoom-in" data-aos-delay="300">
+                    <div class="text-white text-5xl font-bold">
+                        <span class="counter" data-target="25">0</span>
+                    </div>
+                    <div class="text-white opacity-90 mt-2">Années d'Excellence</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Testimonials Section -->
+    <section id="temoignages" class="py-20 bg-white">
+        <div class="container mx-auto px-6">
+            <div class="text-center mb-12" data-aos="fade-up">
+                <h2 class="text-3xl md:text-4xl font-bold text-gray-800 mb-4">Ce qu'ils disent de <span class="text-primary">Nous</span></h2>
+                <div class="w-24 h-1 bg-primary mx-auto"></div>
+                <p class="text-gray-600 mt-4 max-w-2xl mx-auto">Les témoignages de nos élèves et parents</p>
+            </div>
+            
+            <div class="grid md:grid-cols-3 gap-8">
+                <div class="bg-gray-50 rounded-xl p-6 shadow-lg" data-aos="fade-up" data-aos-delay="0">
+                    <div class="flex items-center mb-4">
+                        <img src="https://randomuser.me/api/portraits/women/1.jpg" alt="Parent" class="w-16 h-16 rounded-full mr-4">
+                        <div>
+                            <h4 class="font-bold text-lg text-gray-800">Marie Claire</h4>
+                            <p class="text-gray-500">Parent d'élève</p>
+                        </div>
+                    </div>
+                    <p class="text-gray-600 italic">"CS KABA a transformé mon fils. L'excellence académique et l'encadrement sont remarquables."</p>
+                    <div class="mt-4 text-yellow-400">
+                        <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i>
+                    </div>
+                </div>
+                
+                <div class="bg-gray-50 rounded-xl p-6 shadow-lg" data-aos="fade-up" data-aos-delay="100">
+                    <div class="flex items-center mb-4">
+                        <img src="https://randomuser.me/api/portraits/men/1.jpg" alt="Élève" class="w-16 h-16 rounded-full mr-4">
+                        <div>
+                            <h4 class="font-bold text-lg text-gray-800">Jean-Paul K.</h4>
+                            <p class="text-gray-500">Ancien élève</p>
+                        </div>
+                    </div>
+                    <p class="text-gray-600 italic">"Grâce à la qualité de l'enseignement reçu au CS KABA, j'ai pu intégrer une grande université."</p>
+                    <div class="mt-4 text-yellow-400">
+                        <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i>
+                    </div>
+                </div>
+                
+                <div class="bg-gray-50 rounded-xl p-6 shadow-lg" data-aos="fade-up" data-aos-delay="200">
+                    <div class="flex items-center mb-4">
+                        <img src="https://randomuser.me/api/portraits/women/2.jpg" alt="Enseignant" class="w-16 h-16 rounded-full mr-4">
+                        <div>
+                            <h4 class="font-bold text-lg text-gray-800">Dr. Sophie M.</h4>
+                            <p class="text-gray-500">Enseignante</p>
+                        </div>
+                    </div>
+                    <p class="text-gray-600 italic">"Travailler au CS KABA est une fierté. Les conditions de travail sont excellentes."</p>
+                    <div class="mt-4 text-yellow-400">
+                        <i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i><i class="fas fa-star"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Contact Section -->
+    <section id="contact" class="py-20 bg-gray-50">
+        <div class="container mx-auto px-6">
+            <div class="text-center mb-12" data-aos="fade-up">
+                <h2 class="text-3xl md:text-4xl font-bold text-gray-800 mb-4">Contactez-<span class="text-primary">Nous</span></h2>
+                <div class="w-24 h-1 bg-primary mx-auto"></div>
+                <p class="text-gray-600 mt-4 max-w-2xl mx-auto">Nous sommes à votre écoute pour toute information</p>
+            </div>
+            
+            <div class="grid md:grid-cols-2 gap-12">
+                <div data-aos="fade-right">
+                    <div class="bg-white rounded-2xl p-8 shadow-lg">
+                        <h3 class="text-2xl font-bold mb-6 text-gray-800">Informations de contact</h3>
+                        <div class="space-y-4">
+                            <div class="flex items-center space-x-4">
+                                <i class="fas fa-map-marker-alt text-primary text-2xl"></i>
+                                <div>
+                                    <p class="font-semibold text-gray-800">Adresse</p>
+                                    <p class="text-gray-600">Kinshasa, République Démocratique du Congo</p>
+                                </div>
+                            </div>
+                            <div class="flex items-center space-x-4">
+                                <i class="fas fa-phone text-primary text-2xl"></i>
+                                <div>
+                                    <p class="font-semibold text-gray-800">Téléphone</p>
+                                    <p class="text-gray-600">+243 123 456 789</p>
+                                </div>
+                            </div>
+                            <div class="flex items-center space-x-4">
+                                <i class="fas fa-envelope text-primary text-2xl"></i>
+                                <div>
+                                    <p class="font-semibold text-gray-800">Email</p>
+                                    <p class="text-gray-600">contact@cskaba.edu</p>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-8">
+                            <h4 class="font-semibold mb-4 text-gray-800">Suivez-nous</h4>
+                            <div class="flex space-x-3">
+                                <a href="#" class="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center text-primary hover:bg-primary hover:text-white transition"><i class="fab fa-facebook-f"></i></a>
+                                <a href="#" class="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center text-primary hover:bg-primary hover:text-white transition"><i class="fab fa-twitter"></i></a>
+                                <a href="#" class="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center text-primary hover:bg-primary hover:text-white transition"><i class="fab fa-instagram"></i></a>
+                                <a href="#" class="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center text-primary hover:bg-primary hover:text-white transition"><i class="fab fa-linkedin-in"></i></a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <div data-aos="fade-left">
+                    <form id="contactForm" class="bg-white rounded-2xl p-8 shadow-lg">
+                        <h3 class="text-2xl font-bold mb-6 text-gray-800">Envoyez-nous un message</h3>
+                        <div class="space-y-4">
+                            <div>
+                                <input type="text" placeholder="Votre nom" class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:border-primary">
+                            </div>
+                            <div>
+                                <input type="email" placeholder="Votre email" class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:border-primary">
+                            </div>
+                            <div>
+                                <textarea rows="4" placeholder="Votre message" class="w-full px-4 py-3 rounded-lg border border-gray-300 focus:outline-none focus:border-primary"></textarea>
+                            </div>
+                            <button type="submit" class="w-full bg-gradient-to-r from-primary to-secondary text-white px-6 py-3 rounded-lg font-semibold hover:shadow-lg transition">
+                                <i class="fas fa-paper-plane mr-2"></i>Envoyer
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="bg-gray-900 text-white py-12">
+        <div class="container mx-auto px-6">
+            <div class="grid md:grid-cols-4 gap-8">
+                <div>
+                    <div class="flex items-center space-x-3 mb-4">
+                        <img src="/static/images/kaba.png" alt="Logo" class="h-10 w-auto" onerror="this.style.display='none'">
+                        <h3 class="text-xl font-bold">CS KABA</h3>
+                    </div>
+                    <p class="text-gray-400">Complexe Scolaire d'Excellence formant les leaders de demain.</p>
+                </div>
+                <div>
+                    <h4 class="text-lg font-semibold mb-4">Liens rapides</h4>
+                    <ul class="space-y-2">
+                        <li><a href="#accueil" class="text-gray-400 hover:text-white transition">Accueil</a></li>
+                        <li><a href="#apropos" class="text-gray-400 hover:text-white transition">À propos</a></li>
+                        <li><a href="#services" class="text-gray-400 hover:text-white transition">Services</a></li>
+                        <li><a href="#contact" class="text-gray-400 hover:text-white transition">Contact</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="text-lg font-semibold mb-4">Horaires</h4>
+                    <ul class="space-y-2 text-gray-400">
+                        <li>Lundi-Vendredi: 8h - 17h</li>
+                        <li>Samedi: 8h - 12h</li>
+                        <li>Dimanche: Fermé</li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="text-lg font-semibold mb-4">Newsletter</h4>
+                    <div class="flex">
+                        <input type="email" placeholder="Votre email" class="flex-1 px-4 py-2 rounded-l-lg text-gray-900">
+                        <button class="bg-primary px-4 py-2 rounded-r-lg hover:bg-secondary transition">
+                            <i class="fas fa-paper-plane"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="border-t border-gray-800 mt-8 pt-8 text-center text-gray-400">
+                <p>&copy; 2025 CS KABA - Complexe Scolaire. Tous droits réservés.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Back to Top Button -->
+    <div class="back-to-top" id="backToTop" style="position: fixed; bottom: 30px; right: 30px; width: 50px; height: 50px; background: linear-gradient(135deg, #1e3c72, #2a5298); color: white; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; opacity: 0; visibility: hidden; transition: all 0.3s; z-index: 1000;">
+        <i class="fas fa-arrow-up"></i>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://unpkg.com/aos@2.3.1/dist/aos.js"></script>
+    <script>
+        // Initialize AOS
+        AOS.init({ duration: 1000, once: true });
+        
+        // Loader
+        window.addEventListener('load', function() {
+            const loader = document.getElementById('loader');
+            if (loader) {
+                setTimeout(function() { loader.style.display = 'none'; }, 500);
+            }
+        });
+        
+        // Navbar scroll effect
+        window.addEventListener('scroll', function() {
+            const navbar = document.getElementById('navbar');
+            if (navbar) {
+                if (window.scrollY > 50) {
+                    navbar.classList.add('shadow-lg');
+                } else {
+                    navbar.classList.remove('shadow-lg');
+                }
+            }
+        });
+        
+        // Mobile menu toggle
+        const mobileMenuButton = document.getElementById('mobile-menu-button');
+        const mobileMenu = document.getElementById('mobile-menu');
+        if (mobileMenuButton && mobileMenu) {
+            mobileMenuButton.addEventListener('click', function() {
+                mobileMenu.classList.toggle('hidden');
+            });
+        }
+        
+        // Counter animation
+        const counters = document.querySelectorAll('.counter');
+        const speed = 200;
+        const animateCounters = function() {
+            counters.forEach(function(counter) {
+                const updateCount = function() {
+                    const target = parseInt(counter.getAttribute('data-target'));
+                    const count = parseInt(counter.innerText);
+                    const increment = target / speed;
+                    if (count < target) {
+                        counter.innerText = Math.ceil(count + increment);
+                        setTimeout(updateCount, 20);
+                    } else {
+                        counter.innerText = target;
+                    }
+                };
+                updateCount();
+            });
+        };
+        
+        const statsSection = document.getElementById('statistiques');
+        let counted = false;
+        if (statsSection) {
+            window.addEventListener('scroll', function() {
+                const sectionPos = statsSection.getBoundingClientRect().top;
+                const screenPos = window.innerHeight / 1.3;
+                if (sectionPos < screenPos && !counted) {
+                    animateCounters();
+                    counted = true;
+                }
+            });
+        }
+        
+        // Back to top button
+        const backToTop = document.getElementById('backToTop');
+        if (backToTop) {
+            window.addEventListener('scroll', function() {
+                if (window.scrollY > 300) {
+                    backToTop.style.opacity = '1';
+                    backToTop.style.visibility = 'visible';
+                } else {
+                    backToTop.style.opacity = '0';
+                    backToTop.style.visibility = 'hidden';
+                }
+            });
+            backToTop.addEventListener('click', function() {
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            });
+        }
+        
+        // Smooth scroll
+        document.querySelectorAll('a[href^="#"]').forEach(function(anchor) {
+            anchor.addEventListener('click', function(e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({ behavior: 'smooth' });
+                }
+            });
+        });
+        
+        // Contact form
+        const contactForm = document.getElementById('contactForm');
+        if (contactForm) {
+            contactForm.addEventListener('submit', function(e) {
+                e.preventDefault();
+                alert('Message envoyé avec succès ! Nous vous contacterons bientôt.');
+                this.reset();
+            });
+        }
+    </script>
+</body>
+</html>
